@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import './App.css';
-import { MenuBar } from './components/MenuBar';
-import { FormulaInput } from './components/FormulaInput';
-import Cell from './components/Cell';
+// import { MenuBar } from './components/MenuBar';
+// import { FormulaInput } from './components/FormulaInput';
+// import Cell from './components/Cell';
 import Spreadsheet from './components/Spreadsheet';
 
 function App() {
@@ -24,7 +24,7 @@ function App() {
     <div className='App'>
       {/* <MenuBar></MenuBar> */}
       {/* <FormulaInput updateInput={updateInput}></FormulaInput> */}
-      <Spreadsheet x={8} y={20}></Spreadsheet>
+      <Spreadsheet x={6} y={20}></Spreadsheet>
     </div>
   );
 }

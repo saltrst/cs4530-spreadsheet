@@ -25,11 +25,14 @@ export default class Cell extends React.Component {
 
   onKeyPressOnInput = (e: any) => {
     if (e.key === 'Enter') {
+      this.parseFormula(e.target.value);
       this.hasNewValue(e.target.value);
     }
   };
 
   onBlur = (e: any) => {
+    // where we want to add formula compatibility and shit
+    this.parseFormula(e.target.value);
     this.hasNewValue(e.target.value);
   };
 
@@ -49,13 +52,12 @@ export default class Cell extends React.Component {
   };
 
   setDisplay = ({ x, y }: any, value: any) => {
-    // where we want to add formula compatibility
     return value;
   };
 
   dynamicCss = () => {
     let css: any = {
-      width: '80px',
+      width: '100px',
       padding: '4px',
       margin: '0',
       height: '25px',
@@ -78,6 +80,34 @@ export default class Cell extends React.Component {
     }
     return css;
   };
+
+  parseFormula(value: any) {
+    if (value.includes('REF')) {
+      console.log('REF Detected');
+      return;
+    }
+    if (value.includes('SUM')) {
+      console.log('SUM Detected');
+      return;
+    }
+    if (value.includes('+')) {
+      console.log('Addition Detected');
+      return;
+    }
+    if (value.includes('AVERAGE')) {
+      console.log('AVERAGE Detected');
+      return;
+    }
+    if (value.includes('$') && value.length > 1) {
+      console.log('Stock Ticker Detected');
+      return;
+    }
+    if (!isNaN(value) && !isNaN(parseFloat(value))) {
+      console.log('Number Detected');
+    } else {
+      console.log('String Detected');
+    }
+  }
 
   render() {
     const css = this.dynamicCss();
