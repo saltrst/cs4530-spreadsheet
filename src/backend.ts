@@ -286,20 +286,21 @@ export class Cell extends Subject implements IObserver {
 
   updateVal(rawValue: string): void {
     this.rawValue = rawValue;
+    this.cacheValue = this.fixCellReferenceValues(rawValue);
 
-    if (parser.parse(rawValue).result) {
-      this.cacheValue = new CellString(
-        parser.parse(rawValue).result.toString()
-      );
-    } else {
-      this.cacheValue = new CellString(rawValue);
-    }
+    // if (parser.parse(rawValue).result) {
+    //   this.cacheValue = new CellString(
+    //     parser.parse(rawValue).result.toString()
+    //   );
+    // } else {
+    //   this.cacheValue = new CellString(rawValue);
+    // }
 
     // this.expression = WillParse.parse(rawValue);
     // this.expression = Parser.parse(rawValue);
     // console.log(this.expression);
     // this.cacheValue = this.expression.eval();
-    //this.notify()
+    // this.notify()
   }
 
   clear(): void {
