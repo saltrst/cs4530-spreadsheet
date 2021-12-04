@@ -22,6 +22,7 @@ export default class ReactCell extends React.Component {
   onKeyPressOnInput = (e: any) => {
     if (e.key === 'Enter') {
       //  this.hasNewValue(e.target.value);
+      this.cell.updateVal(e.target.value);
       this.setState({ editing: false });
     }
   };
@@ -32,11 +33,12 @@ export default class ReactCell extends React.Component {
     //{ x: this.props.x, y: this.props.y },
     //e.target.value
     // console.log(e.target.value);
-    this.cell.updateVal(e.target.value);
+    //this.cell.updateVal(e.target.value);
   };
 
   onBlur = (e: any) => {
     //this.hasNewValue(e.target.value);
+    this.cell.updateVal(e.target.value);
     this.setState({ editing: false });
   };
 

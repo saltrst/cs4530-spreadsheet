@@ -55,9 +55,31 @@ export class Spreadsheet {
     for (let x = 0; x < this.width; x++) {
       this.cells[x] = new Array(height);
       for (let y = 0; y < this.height; y++) {
-        this.cells[x][y] = new Cell();
+        this.cells[x][y] = new Cell(this);
       }
     }
+  }
+
+  findCellVal(x: number, y: number): string {
+    return this.cells[x][y].getDisplay();
+  }
+
+  sumCellVals(arr: number[][]): string {
+    let value = 0;
+    for (let a of arr) {
+      console.log(a);
+      value += parseInt(this.findCellVal(a[0], a[1]));
+    }
+    return value.toString();
+  }
+
+  avgCellVals(arr: number[][]): string {
+    let value = 0;
+    for (let a of arr) {
+      console.log(a);
+      value += parseInt(this.findCellVal(a[0], a[1]));
+    }
+    return (value / arr.length).toString();
   }
 
   getCells(): Cell[][] {
@@ -98,7 +120,7 @@ export class Spreadsheet {
   insertRow(index: number): void {
     this.height++;
     for (let x = 0; x < this.width; x++) {
-      this.cells[x].splice(index, 0, new Cell());
+      this.cells[x].splice(index, 0, new Cell(this));
     }
   }
 
@@ -110,7 +132,7 @@ export class Spreadsheet {
     this.width++;
     let array = [];
     for (let i = 0; i < this.height; i++) {
-      array.push(new Cell());
+      array.push(new Cell(this));
     }
     this.cells.splice(index, 0, array);
   }
@@ -271,9 +293,11 @@ export class Cell extends Subject implements IObserver {
   private expression: IExpression;
   private cacheValue: ICellValue;
   private rawValue: string;
+  private spread: Spreadsheet;
 
-  constructor() {
+  constructor(spread: Spreadsheet) {
     super();
+    this.spread = spread;
     this.expression = new StringExp('');
     this.cacheValue = new CellString('');
     this.rawValue = '';
@@ -284,17 +308,128 @@ export class Cell extends Subject implements IObserver {
     this.notify();
   }
 
+  subSomeValue(rawVal: string, term: string): string {
+    let updatedRaw = rawVal;
+    while (updatedRaw.includes(term + '(')) {
+      let start = updatedRaw.indexOf(term + '(');
+      let finish = updatedRaw.indexOf(')', start);
+      let found = updatedRaw.substring(start + term.length + 1, finish);
+      let refCellVal = '';
+      if (term === 'SUM' || term === 'AVERAGE') {
+        let cellRange = this.parseCellArray(found);
+        let allCells = this.fillCellArray(cellRange);
+        if (term === 'SUM') {
+          refCellVal = this.spread.sumCellVals(allCells);
+        } else {
+          refCellVal = this.spread.avgCellVals(allCells);
+        }
+      } else {
+        let lett = found.split(/[0-9]/)[0];
+        let num = found.substring(lett.length);
+        refCellVal = this.spread.findCellVal(
+          this.findRowIndex(lett),
+          parseInt(num)
+        );
+      }
+      updatedRaw = rawVal.replace(term + '(' + found + ')', refCellVal);
+    }
+    return updatedRaw;
+  }
+
+  findRowIndex(str: string): number {
+    return this.alphabet.indexOf(str[0].toLowerCase()) + 26 * (str.length - 1);
+  }
+
+  private alphabet = [
+    'a',
+    'b',
+    'c',
+    'd',
+    'e',
+    'f',
+    'g',
+    'h',
+    'i',
+    'j',
+    'k',
+    'l',
+    'm',
+    'n',
+    'o',
+    'p',
+    'q',
+    'r',
+    's',
+    't',
+    'u',
+    'v',
+    'w',
+    'x',
+    'y',
+    'z',
+  ];
+
+  fillCellArray(arr: string[]): Array<number[]> {
+    let a = [];
+    let lett1 = arr[0].split(/[0-9]/)[0];
+    let lett2 = arr[1].split(/[0-9]/)[0];
+    let num1 = parseInt(arr[0].substring(lett1.length));
+    let num2 = parseInt(arr[1].substring(lett2.length));
+
+    let sortedLetts = [lett1, lett2].sort(function (a, b) {
+      return a.length - b.length || a.localeCompare(b);
+    });
+
+    let colStart = this.findRowIndex(sortedLetts[0]);
+    let colEnd = this.findRowIndex(sortedLetts[1]);
+    let rowStart = Math.min(num1, num2);
+    let rowEnd = Math.max(num1, num2);
+
+    for (let i = colStart; i <= colEnd; i++) {
+      for (let j = rowStart; j <= rowEnd; j++) {
+        a.push([i, j]);
+      }
+    }
+
+    return a;
+  }
+
+  colIndexToColName(num: number): string {
+    let name = '';
+    let repititions = Math.floor(num / 26) + 1;
+    let letter = this.alphabet[num % 26].toUpperCase();
+
+    for (let i = 0; i < repititions; i++) {
+      name += letter;
+    }
+
+    return name;
+  }
+
+  parseCellArray(found: string): string[] {
+    let arr = [];
+    let v = found.split('..');
+    let v1 = v[0];
+    let v2 = v[1];
+    arr.push(v1);
+    arr.push(v2);
+    return arr;
+  }
+
   updateVal(rawValue: string): void {
     this.rawValue = rawValue;
-    this.cacheValue = this.fixCellReferenceValues(rawValue);
 
-    // if (parser.parse(rawValue).result) {
-    //   this.cacheValue = new CellString(
-    //     parser.parse(rawValue).result.toString()
-    //   );
-    // } else {
-    //   this.cacheValue = new CellString(rawValue);
-    // }
+    let noRefRaw = this.subSomeValue(rawValue, 'REF');
+    noRefRaw = this.subSomeValue(noRefRaw, 'AVERAGE');
+    noRefRaw = this.subSomeValue(noRefRaw, 'SUM');
+
+    if (parser.parse(noRefRaw).result) {
+      this.cacheValue = new CellString(
+        parser.parse(noRefRaw).result.toString()
+      );
+    } else {
+      this.cacheValue = new CellString(rawValue);
+    }
 
     // this.expression = WillParse.parse(rawValue);
     // this.expression = Parser.parse(rawValue);

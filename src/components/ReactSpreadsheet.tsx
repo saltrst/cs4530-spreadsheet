@@ -49,7 +49,7 @@ export default class ReactSpreadsheet extends React.Component {
     let data = [];
     for (let y = -1; y < this.spreadsheet.getHeight(); y++) {
       for (let x = -1; x < this.spreadsheet.getWidth(); x++) {
-        if (x == -1 || y == -1) {
+        if (x === -1 || y === -1) {
           data.push(<ReactHeaderCell key={`${x}-${y}`} y={y} x={x} value='' />);
         } else {
           data.push(
