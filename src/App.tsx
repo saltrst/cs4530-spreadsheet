@@ -3,7 +3,7 @@ import './App.css';
 // import { MenuBar } from './components/MenuBar';
 // import { FormulaInput } from './components/FormulaInput';
 // import Cell from './components/Cell';
-import Spreadsheet from './components/Spreadsheet';
+import ReactSpreadsheet from './components/ReactSpreadsheet';
 
 function App() {
   // const [input, setFormulaInput] = useState('');
@@ -24,7 +24,7 @@ function App() {
     <div className='App'>
       {/* <MenuBar></MenuBar> */}
       {/* <FormulaInput updateInput={updateInput}></FormulaInput> */}
-      <Spreadsheet x={6} y={20}></Spreadsheet>
+      <ReactSpreadsheet></ReactSpreadsheet>
     </div>
   );
 }
