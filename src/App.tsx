@@ -1,11 +1,16 @@
 import React from 'react';
 import './App.css';
-import Spreadsheet from './components/Spreadsheet';
+// import { MenuBar } from './components/MenuBar';
+// import { FormulaInput } from './components/FormulaInput';
+// import Cell from './components/Cell';
+import ReactSpreadsheet from './components/ReactSpreadsheet';
 
 function App() {
   return (
     <div className='App'>
-      <Spreadsheet x={6} y={20}></Spreadsheet>
+      {/* <MenuBar></MenuBar> */}
+      {/* <FormulaInput updateInput={updateInput}></FormulaInput> */}
+      <ReactSpreadsheet></ReactSpreadsheet>
     </div>
   );
 }
