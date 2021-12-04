@@ -4,24 +4,24 @@ import ReactHeaderCell from './ReactHeaderCell';
 import { Document, Cell, Spreadsheet } from '../backend';
 
 export default class ReactSpreadsheet extends React.Component {
-  state : any;
-  props : any;
-  cells : Cell[][];
-  spreadsheet : Spreadsheet;
+  state: any;
+  props: any;
+  cells: Cell[][];
+  spreadsheet: Spreadsheet;
 
   constructor(props: any) {
     super(props);
     this.spreadsheet = Document.instance().getSpreadsheet();
     //this.cells = new Array();
     this.cells = Document.instance().getSpreadsheet().getCells();
-    console.log(this.cells);
+    // console.log(this.cells);
     this.state = {
       data: {},
     };
   }
 
-  public setCells(cells : Cell[][]) {
-    this.cells = cells
+  public setCells(cells: Cell[][]) {
+    this.cells = cells;
   }
 
   handleChangedCell = ({ x, y }: any, value: any) => {
@@ -38,9 +38,9 @@ export default class ReactSpreadsheet extends React.Component {
   getCSS() {
     let cellWidth = ReactCell.width;
     let width = cellWidth * (this.spreadsheet.getWidth() + 1);
-    let css : any = {
-      width: width + 'px'
-    }
+    let css: any = {
+      width: width + 'px',
+    };
     return css;
   }
 
@@ -50,14 +50,7 @@ export default class ReactSpreadsheet extends React.Component {
     for (let y = -1; y < this.spreadsheet.getHeight(); y++) {
       for (let x = -1; x < this.spreadsheet.getWidth(); x++) {
         if (x == -1 || y == -1) {
-          data.push(
-            <ReactHeaderCell
-              key={`${x}-${y}`}
-              y={y}
-              x={x}
-              value=''
-            />
-          );
+          data.push(<ReactHeaderCell key={`${x}-${y}`} y={y} x={x} value='' />);
         } else {
           data.push(
             <ReactCell
@@ -73,7 +66,7 @@ export default class ReactSpreadsheet extends React.Component {
         }
       }
     }
-    return <div style={this.getCSS()}>{data}</div>
+    return <div style={this.getCSS()}>{data}</div>;
     //for (let y = 0; y < this.props.y + 1; y += 1) {
     //  const rowData = this.state.data[y] || {};
     //  rows.push(

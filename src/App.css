@@ -4,14 +4,15 @@ html {
 
 .App {
   height: 100vh;
-  width: 100%;
+  /* width: 100vs; */
   margin: auto;
-  background-color: #f3f3f3;
+  /* background-color: #f3f3f3; */
   display: flex;
   flex-direction: column;
 }
 
 .cell {
+  background-color: #f3f3f3;
   padding: 4px;
   margin: 0;
   height: 25px;
