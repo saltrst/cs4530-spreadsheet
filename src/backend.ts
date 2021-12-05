@@ -137,26 +137,26 @@ export class Spreadsheet extends Subject {
   }
 
   drawEverything() {
-    for(let cellArr of this.cells) {
-      for(let cell of cellArr) {
+    for (let cellArr of this.cells) {
+      for (let cell of cellArr) {
         cell.notify();
       }
     }
   }
 
   insertRow(index: number): void {
-    console.log("before " , this.cells)
+    console.log('before ', this.cells);
     //this.height++;
-    console.log("row inserted " + index);
+    console.log('row inserted ' + index);
     for (let x = 0; x < this.width; x++) {
-      this.cells[x].splice(index, 0, new Cell("New Row @ index : " + index));
+      this.cells[x].splice(index, 0, new Cell('New Row @ index : ' + index));
     }
     for (let x = 0; x < this.width; x++) {
       for (let y = 0; y < this.height; y++) {
         this.cells[x][y].adjustForRow(1, index);
       }
     }
-    console.log("after " , this.cells)
+    console.log('after ', this.cells);
     this.notify();
     this.drawEverything();
   }
@@ -211,7 +211,7 @@ export class Cell extends Subject implements IObserver {
   private rawValue: string;
   //private testVal: string;
 
-  constructor(testVal? : string) {
+  constructor(testVal?: string) {
     super();
     this.expression = new StringExp('');
     this.cacheValue = new CellString('');
@@ -278,12 +278,14 @@ export class Cell extends Subject implements IObserver {
   }
 
   async returnStockPrice(ticker: string): Promise<string> {
+    console.log('tucker: ', ticker);
     const url: string =
       'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=' +
       ticker +
       '&apikey=4BUCZWKTB2069YPE';
     try {
       const response: any = await axios.get(url);
+      console.log(response);
       const lastData: any = Object.values(response.data['Time Series (Daily)']);
       const amt = parseFloat(lastData[0]['4. close']).toString();
       return amt;
@@ -352,8 +354,8 @@ export class Cell extends Subject implements IObserver {
     noRefRaw = await this.subStockTickerValue(noRefRaw, '$');
 
     let parsed = parser.parse(noRefRaw).result;
-    let type = typeof(parsed);
-    if (parsed && type === "number") {
+    let type = typeof parsed;
+    if (parsed && type === 'number') {
       this.cacheValue = new CellString(parsed.toString());
     } else {
       this.cacheValue = new CellString(this.concatIfCan(noRefRaw));
@@ -362,27 +364,24 @@ export class Cell extends Subject implements IObserver {
     this.notify();
   }
 
-  concatIfCan(str : string) :string {
+  concatIfCan(str: string): string {
+    let strRef = str.split('+');
+    let cleanStrings = [];
 
-    let strRef = str.split("+");
-    let cleanStrings = []
-
-    for(let bound of strRef) {
-      if(!this.isBoundedByQuotes(bound)) {
+    for (let bound of strRef) {
+      if (!this.isBoundedByQuotes(bound)) {
         return str;
-      }
-      else {
+      } else {
         let clean = bound.split('"').join('');
         cleanStrings.push(clean);
       }
     }
-    return(cleanStrings.join(''))
+    return cleanStrings.join('');
   }
 
-  isBoundedByQuotes(str : string) {
-    return (str[0] === '"' && str[str.length-1] === '"')
+  isBoundedByQuotes(str: string) {
+    return str[0] === '"' && str[str.length - 1] === '"';
   }
-
 
   clear(): void {
     this.updateVal('');
