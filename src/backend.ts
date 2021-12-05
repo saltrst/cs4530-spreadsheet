@@ -24,7 +24,7 @@ export abstract class Subject {
 
   attach(obs: IObserver): void {
     this.observers.push(obs);
-    console.log('called', this);
+  //  console.log('called', this);
   }
 
   detach(obs: IObserver): void {
@@ -137,13 +137,24 @@ export class Spreadsheet extends Subject {
     return data;
   }
 
-  insertRow(index: number): void {
-    this.height++;
-    for (let x = 0; x < this.width; x++) {
-      this.cells[x].splice(index, 0, new Cell());
-      console.log(this.cells[x]);
+  drawEverything() {
+    for(let cellArr of this.cells) {
+      for(let cell of cellArr) {
+        cell.notify();
+      }
     }
+  }
+
+  insertRow(index: number): void {
+    console.log("before " , this.cells)
+    //this.height++;
+    console.log("row inserted " + index);
+    for (let x = 0; x < this.width; x++) {
+      this.cells[x].splice(index, 0, new Cell("New Row @ index : " + index));
+    }
+    console.log("after " , this.cells)
     this.notify();
+    this.drawEverything();
   }
 
   deleteRow(index: number): void {
@@ -171,12 +182,13 @@ export class Cell extends Subject implements IObserver {
   private expression: IExpression;
   private cacheValue: ICellValue;
   private rawValue: string;
+  //private testVal: string;
 
-  constructor() {
+  constructor(testVal? : string) {
     super();
     this.expression = new StringExp('');
     this.cacheValue = new CellString('');
-    this.rawValue = '';
+    this.rawValue = testVal || '';
   }
 
   update(): void {
@@ -319,24 +331,37 @@ export class Cell extends Subject implements IObserver {
     noRefRaw = await this.subStockTickerValue(noRefRaw, '$');
 
     let parsed = parser.parse(noRefRaw).result;
-    if (parsed) {
+    let type = typeof(parsed);
+    if (parsed && type === "number") {
       this.cacheValue = new CellString(parsed.toString());
     } else {
-      this.cacheValue = new CellString(rawValue);
+      this.cacheValue = new CellString(this.concatIfCan(rawValue));
     }
 
-    //for(let o of this.observers) {
-    //  console.log(o)
-    //}
-
     this.notify();
-
-    // this.expression = WillParse.parse(rawValue);
-    // this.expression = Parser.parse(rawValue);
-    // console.log(this.expression);
-    // this.cacheValue = this.expression.eval();
-    // this.notify()
   }
+
+  concatIfCan(str : string) :string {
+
+    let strRef = str.split("+");
+    let cleanStrings = []
+
+    for(let bound of strRef) {
+      if(!this.isBoundedByQuotes(bound)) {
+        return str;
+      }
+      else {
+        let clean = bound.split('"').join('');
+        cleanStrings.push(clean);
+      }
+    }
+    return(cleanStrings.join(''))
+  }
+
+  isBoundedByQuotes(str : string) {
+    return (str[0] === '"' && str[str.length-1] === '"')
+  }
+
 
   clear(): void {
     this.updateVal('');

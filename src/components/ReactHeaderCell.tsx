@@ -38,9 +38,9 @@ export default class ReactHeaderCell extends React.Component {
     }
 
     if (this.props.y == -1) {
-      Document.instance().getSpreadsheet().insertColumn(this.props.y);
+      Document.instance().getSpreadsheet().insertColumn(this.props.x);
     } else if (this.props.x == -1) {
-      Document.instance().getSpreadsheet().insertRow(this.props.x);
+      Document.instance().getSpreadsheet().insertRow(this.props.y);
     }
   };
 
