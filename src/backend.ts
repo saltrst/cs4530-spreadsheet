@@ -335,7 +335,7 @@ export class Cell extends Subject implements IObserver {
     if (parsed && type === "number") {
       this.cacheValue = new CellString(parsed.toString());
     } else {
-      this.cacheValue = new CellString(this.concatIfCan(rawValue));
+      this.cacheValue = new CellString(this.concatIfCan(noRefRaw));
     }
 
     this.notify();
