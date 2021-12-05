@@ -9,6 +9,7 @@ export default class ReactCell extends React.Component implements IObserver {
   props: any;
   state: any;
   cell: Cell;
+  isHighlighted: boolean;
 
   public static width: number = 75;
 
@@ -24,6 +25,7 @@ export default class ReactCell extends React.Component implements IObserver {
 
   constructor(props: any) {
     super(props);
+    this.isHighlighted = false;
     this.cell = props.cell;
     this.state = {
       editing: false,
@@ -60,7 +62,12 @@ export default class ReactCell extends React.Component implements IObserver {
   };
 
   onClick = (e: any) => {
-    this.setState({ editing: true });
+    if (e.ctrlKey) {
+      this.isHighlighted = !this.isHighlighted;
+      this.forceUpdate();
+    } else {
+      this.setState({ editing: true });
+    }
   };
 
   //hasNewValue = (value: any) => {
@@ -88,6 +95,10 @@ export default class ReactCell extends React.Component implements IObserver {
     let css: any = {
       width: ReactCell.width + 'px',
     };
+    if (this.isHighlighted) {
+      console.log('higlighted')
+      css.backgroundColor = '#e7f78f';
+    }
     return css;
   };
 
@@ -114,7 +125,7 @@ export default class ReactCell extends React.Component implements IObserver {
       );
     } else {
       return (
-        <span onClick={(e) => this.onClick(e)} style={css} className={'cell'}>
+        <span onClick={this.onClick} style={css} className={'cell'}>
           {this.cell.getDisplay()}
         </span>
       );
