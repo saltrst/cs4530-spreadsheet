@@ -1,4 +1,3 @@
-import { forEachChild } from 'typescript';
 const FormulaParser = require('hot-formula-parser').Parser;
 const parser = new FormulaParser();
 
@@ -20,27 +19,14 @@ export class Document {
     return this.singleton;
   }
 
+  public static getSpreadsheet(): Spreadsheet {
+    return Document.instance().getSpreadsheet();
+  }
+
   getSpreadsheet(): Spreadsheet {
     return this.spreadsheet;
   }
 }
-
-//export class Document {
-//    //private spreadsheets : Spreadsheet[]
-//    private spreadsheet : Spreadsheet;
-//
-//    constructor() {
-//        this.spreadsheet = new Spreadsheet(10, 20);
-//    }
-//
-//    //newSpreadsheet() : void {
-//    //    //Todo
-//    //}
-//
-//    //removeSpreadsheet(index : number) : void {
-//    //    //Todo
-//    //}
-//}
 
 export class Spreadsheet {
   private width: number;
@@ -99,7 +85,7 @@ export class Spreadsheet {
     this.cells[x][y].updateVal(input);
   }
 
-  export(): void {
+  getCSV(): string {
     let data = '';
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
@@ -114,7 +100,7 @@ export class Spreadsheet {
       }
       data += '\n';
     }
-    console.log(data);
+    return data;
   }
 
   insertRow(index: number): void {
@@ -252,52 +238,15 @@ export class Parser {
 
     return parse();
   }
-
-  public static reverse(exp: IExpression): string {
-    //Todo
-    throw new Error('Method not implemented.');
-  }
 }
-
-// export class WillParse {
-//   public static parse(str: string): IExpression {
-//     let parse = () => {
-//       if (!isNaN(parseFloat(str))) {
-//         if (parseFloat(str).toString().length === str.length) {
-//           return new NumberExp(parseInt(str));
-//         }
-//         return new StringExp(str);
-//       }
-//       if (str[0] === '=') {
-//         let strNoEquals = str.replace('=', '');
-//         if (strNoEquals.includes('+')) {
-//           let opArr = strNoEquals.split('+');
-//           console.log(strNoEquals);
-//           console.log(opArr);
-//           if (opArr.length === 2) {
-//             return new OperationExp(
-//               new NumberExp(parseInt(opArr[0])),
-//               new NumberExp(parseInt(opArr[1])),
-//               Operation.Add
-//             );
-//           }
-//         }
-//       }
-//       return new StringExp(str);
-//     };
-//     return parse();
-//   }
-// }
 
 export class Cell extends Subject implements IObserver {
   private expression: IExpression;
   private cacheValue: ICellValue;
   private rawValue: string;
-  private spread: Spreadsheet;
 
   constructor(spread: Spreadsheet) {
     super();
-    this.spread = spread;
     this.expression = new StringExp('');
     this.cacheValue = new CellString('');
     this.rawValue = '';
@@ -319,14 +268,14 @@ export class Cell extends Subject implements IObserver {
         let cellRange = this.parseCellArray(found);
         let allCells = this.fillCellArray(cellRange);
         if (term === 'SUM') {
-          refCellVal = this.spread.sumCellVals(allCells);
+          refCellVal = Document.getSpreadsheet().sumCellVals(allCells);
         } else {
-          refCellVal = this.spread.avgCellVals(allCells);
+          refCellVal = Document.getSpreadsheet().avgCellVals(allCells);
         }
       } else {
         let lett = found.split(/[0-9]/)[0];
         let num = found.substring(lett.length);
-        refCellVal = this.spread.findCellVal(
+        refCellVal = Document.getSpreadsheet().findCellVal(
           this.findRowIndex(lett),
           parseInt(num)
         );
@@ -337,37 +286,8 @@ export class Cell extends Subject implements IObserver {
   }
 
   findRowIndex(str: string): number {
-    return this.alphabet.indexOf(str[0].toLowerCase()) + 26 * (str.length - 1);
+    return BaseConvert.decode(str);
   }
-
-  private alphabet = [
-    'a',
-    'b',
-    'c',
-    'd',
-    'e',
-    'f',
-    'g',
-    'h',
-    'i',
-    'j',
-    'k',
-    'l',
-    'm',
-    'n',
-    'o',
-    'p',
-    'q',
-    'r',
-    's',
-    't',
-    'u',
-    'v',
-    'w',
-    'x',
-    'y',
-    'z',
-  ];
 
   fillCellArray(arr: string[]): Array<number[]> {
     let a = [];
@@ -397,7 +317,7 @@ export class Cell extends Subject implements IObserver {
   colIndexToColName(num: number): string {
     let name = '';
     let repititions = Math.floor(num / 26) + 1;
-    let letter = this.alphabet[num % 26].toUpperCase();
+    let letter = BaseConvert.encode(num);
 
     for (let i = 0; i < repititions; i++) {
       name += letter;
