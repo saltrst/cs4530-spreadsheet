@@ -1,10 +1,11 @@
 import React from 'react';
 import { Cell } from '../backend';
+import { IObserver } from '../backend';
 
 /**
  * Cell represents the atomic element of a table
  */
-export default class ReactCell extends React.Component {
+export default class ReactCell extends React.Component implements IObserver {
   props: any;
   state: any;
   cell: Cell;
@@ -17,6 +18,10 @@ export default class ReactCell extends React.Component {
     this.state = {
       editing: false,
     };
+    this.cell.attach(this);
+  }
+  update(): void {
+    this.setState({ editing: false });
   }
 
   onKeyPressOnInput = (e: any) => {

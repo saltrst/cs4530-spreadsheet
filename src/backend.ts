@@ -50,7 +50,11 @@ export class Spreadsheet {
     return this.cells[x][y].getDisplay();
   }
 
-  sumCellVals(arr: number[][]): string {
+  findAndAttachToCell(c : Cell, x : number, y : number) : void {
+    this.cells[x][y].attach(c);
+  }
+
+  sumCellVals(arr : number[][]) : string  {
     let value = 0;
     for (let a of arr) {
       console.log(a);
@@ -253,7 +257,8 @@ export class Cell extends Subject implements IObserver {
   }
 
   update(): void {
-    this.cacheValue = this.expression.eval();
+    console.log("updating" + this.rawValue)
+    this.updateVal(this.rawValue);
     this.notify();
   }
 
@@ -267,9 +272,13 @@ export class Cell extends Subject implements IObserver {
       if (term === 'SUM' || term === 'AVERAGE') {
         let cellRange = this.parseCellArray(found);
         let allCells = this.fillCellArray(cellRange);
-        if (term === 'SUM') {
+        for(let a of allCells) {
+          Document.getSpreadsheet().findAndAttachToCell(this,a[0], a[1]);
+        }
+        if(term === "SUM") {
           refCellVal = Document.getSpreadsheet().sumCellVals(allCells);
-        } else {
+        }
+        else {
           refCellVal = Document.getSpreadsheet().avgCellVals(allCells);
         }
       } else {
@@ -280,7 +289,7 @@ export class Cell extends Subject implements IObserver {
           parseInt(num)
         );
       }
-      updatedRaw = rawVal.replace(term + '(' + found + ')', refCellVal);
+      updatedRaw = rawVal.replace(term + "(" + found + ")", refCellVal);
     }
     return updatedRaw;
   }
@@ -339,17 +348,27 @@ export class Cell extends Subject implements IObserver {
   updateVal(rawValue: string): void {
     this.rawValue = rawValue;
 
-    let noRefRaw = this.subSomeValue(rawValue, 'REF');
-    noRefRaw = this.subSomeValue(noRefRaw, 'AVERAGE');
-    noRefRaw = this.subSomeValue(noRefRaw, 'SUM');
+    let noRefRaw = this.subSomeValue(rawValue, "REF"); 
+    noRefRaw = this.subSomeValue(noRefRaw, "AVERAGE"); 
+    noRefRaw = this.subSomeValue(noRefRaw, "SUM"); 
 
-    if (parser.parse(noRefRaw).result) {
+    console.log("this is update val for  : " +  this.rawValue  + " noREFRAW = " + noRefRaw);
+    
+    let parsed = parser.parse(noRefRaw).result;
+    if (parsed) {
       this.cacheValue = new CellString(
-        parser.parse(noRefRaw).result.toString()
+        parsed.toString()
       );
     } else {
       this.cacheValue = new CellString(rawValue);
     }
+
+    console.log("notify from : " + this.rawValue + "   to : ")
+    for(let o of this.observers) {
+      console.log(o)
+    }
+
+    this.notify();
 
     // this.expression = WillParse.parse(rawValue);
     // this.expression = Parser.parse(rawValue);
