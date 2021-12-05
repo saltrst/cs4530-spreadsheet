@@ -2,6 +2,7 @@ import React from 'react';
 import ReactCell from './ReactCell';
 import ReactHeaderCell from './ReactHeaderCell';
 import { IObserver, Document, Cell, Spreadsheet } from '../backend';
+import { v4 as uuidv4 } from 'uuid';
 
 export default class ReactSpreadsheet
   extends React.Component
@@ -88,7 +89,7 @@ export default class ReactSpreadsheet
         } else {
           data.push(
             <ReactCell
-              key={`${x}-${y}`}
+              key={uuidv4()}
               y={y}
               x={x}
               onChangedValue={this.handleChangedCell}
