@@ -82,8 +82,8 @@ export default class ReactSpreadsheet
     //    console.log(c.observers.length);
     //  });
     //});
-    for (let y = -1; y < Document.getSpreadsheet().getHeight(); y++) {
-      for (let x = -1; x < Document.getSpreadsheet().getWidth(); x++) {
+    for (let y = -1; y < Document.getSpreadsheet().getCells()[0].length; y++) {
+      for (let x = -1; x < Document.getSpreadsheet().getCells().length; x++) {
         if (x === -1 || y === -1) {
           data.push(<ReactHeaderCell key={`${x}-${y}`} y={y} x={x} value='' />);
         } else {
