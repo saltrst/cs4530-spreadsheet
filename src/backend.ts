@@ -4,6 +4,35 @@ const parser = new FormulaParser();
 const DEFAULT_WIDTH = 10;
 const DEFAULT_HEIGHT = 20;
 
+export interface IObserver {
+  update(): void;
+}
+
+export abstract class Subject {
+  observers: IObserver[];
+
+  constructor() {
+    this.observers = new Array();
+  }
+
+  notify(): void {
+    this.observers.forEach((observer) => {
+      observer.update();
+    });
+  }
+
+  attach(obs: IObserver): void {
+    this.observers.push(obs);
+  }
+
+  detach(obs: IObserver): void {
+    let index = this.observers.indexOf(obs);
+    if (index > -1) {
+      this.observers.splice(index, 1);
+    }
+  }
+}
+
 export class Document {
   private spreadsheet: Spreadsheet;
 
@@ -28,12 +57,13 @@ export class Document {
   }
 }
 
-export class Spreadsheet {
+export class Spreadsheet extends Subject {
   private width: number;
   private height: number;
   private cells: Cell[][];
 
   constructor(width: number, height: number) {
+    super();
     this.width = width;
     this.height = height;
 
@@ -41,7 +71,7 @@ export class Spreadsheet {
     for (let x = 0; x < this.width; x++) {
       this.cells[x] = new Array(height);
       for (let y = 0; y < this.height; y++) {
-        this.cells[x][y] = new Cell(this);
+        this.cells[x][y] = new Cell();
       }
     }
   }
@@ -57,7 +87,6 @@ export class Spreadsheet {
   sumCellVals(arr : number[][]) : string  {
     let value = 0;
     for (let a of arr) {
-      console.log(a);
       value += parseInt(this.findCellVal(a[0], a[1]));
     }
     return value.toString();
@@ -66,7 +95,6 @@ export class Spreadsheet {
   avgCellVals(arr: number[][]): string {
     let value = 0;
     for (let a of arr) {
-      console.log(a);
       value += parseInt(this.findCellVal(a[0], a[1]));
     }
     return (value / arr.length).toString();
@@ -110,54 +138,29 @@ export class Spreadsheet {
   insertRow(index: number): void {
     this.height++;
     for (let x = 0; x < this.width; x++) {
-      this.cells[x].splice(index, 0, new Cell(this));
+      this.cells[x].splice(index, 0, new Cell());
     }
+    this.notify();
   }
 
   deleteRow(index: number): void {
     //Todo
+    this.notify();
   }
 
   insertColumn(index: number): void {
     this.width++;
     let array = [];
     for (let i = 0; i < this.height; i++) {
-      array.push(new Cell(this));
+      array.push(new Cell());
     }
     this.cells.splice(index, 0, array);
+    this.notify();
   }
 
   deleteColumn(index: number): void {
     //Todo
-  }
-}
-
-export interface IObserver {
-  update(): void;
-}
-
-export abstract class Subject {
-  observers: IObserver[];
-
-  constructor() {
-    this.observers = new Array();
-  }
-
-  notify(): void {
-    this.observers.forEach((observer) => {
-      observer.update();
-    });
-  }
-
-  attach(obs: IObserver): void {
-    this.observers.push(obs);
-  }
-
-  detach(obs: IObserver): void {
-    let index = this.observers.indexOf(obs);
-    if (index > -1) {
-      this.observers.splice(index, 1);
-    }
+    this.notify();
   }
 }
 
@@ -249,7 +252,7 @@ export class Cell extends Subject implements IObserver {
   private cacheValue: ICellValue;
   private rawValue: string;
 
-  constructor(spread: Spreadsheet) {
+  constructor() {
     super();
     this.expression = new StringExp('');
     this.cacheValue = new CellString('');
@@ -257,9 +260,12 @@ export class Cell extends Subject implements IObserver {
   }
 
   update(): void {
-    console.log("updating" + this.rawValue)
     this.updateVal(this.rawValue);
     this.notify();
+  }
+
+  setRawValue(val: string) {
+      this.rawValue = val;
   }
 
   subSomeValue(rawVal: string, term: string): string {
@@ -352,8 +358,6 @@ export class Cell extends Subject implements IObserver {
     noRefRaw = this.subSomeValue(noRefRaw, "AVERAGE"); 
     noRefRaw = this.subSomeValue(noRefRaw, "SUM"); 
 
-    console.log("this is update val for  : " +  this.rawValue  + " noREFRAW = " + noRefRaw);
-    
     let parsed = parser.parse(noRefRaw).result;
     if (parsed) {
       this.cacheValue = new CellString(
@@ -363,10 +367,9 @@ export class Cell extends Subject implements IObserver {
       this.cacheValue = new CellString(rawValue);
     }
 
-    console.log("notify from : " + this.rawValue + "   to : ")
-    for(let o of this.observers) {
-      console.log(o)
-    }
+    //for(let o of this.observers) {
+    //  console.log(o)
+    //}
 
     this.notify();
 
@@ -396,6 +399,37 @@ export class Cell extends Subject implements IObserver {
 
   getRawValue(): string {
     return this.rawValue;
+  }
+
+  adjustForColumn(amount: number) {
+    let functionRegex = /[A-Z]+\([A-Z]+\d+\)/gd
+    let matches = this.rawValue.match(functionRegex)
+    if (matches === null) return;
+    for (let match of matches) {
+        let exec = /\([A-Z]/gd.exec(match);
+        if (exec === null) continue;
+        let colStr = exec[0].substr(1);
+        let colNum = BaseConvert.decode(colStr);
+        let newVal = BaseConvert.encode(colNum + amount);
+        let newStr = match.replace(colStr, newVal)
+        
+        this.rawValue = this.rawValue.replace(match, newStr);
+    }
+  }
+
+  adjustForRow(amount: number) {
+    let functionRegex = /[A-Z]+\([A-Z]+\d+\)/gd
+    let matches = this.rawValue.match(functionRegex)
+    if (matches === null) return;
+    for (let match of matches) {
+        let exec = /\d+\)/gd.exec(match);
+        if (exec === null) continue;
+        let colStr = exec[0].substr(0, exec[0].length - 1)
+        let newVal = (parseInt(colStr) + 1) + ''
+        let newStr = match.replace(colStr, newVal)
+        
+        this.rawValue = this.rawValue.replace(match, newStr);
+    }
   }
 }
 

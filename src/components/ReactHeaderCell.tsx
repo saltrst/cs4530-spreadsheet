@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactCell from './ReactCell';
-import { BaseConvert, Cell } from '../backend';
+import { Document, BaseConvert, Cell } from '../backend';
 
 /**
  * Cell represents the atomic element of a table
@@ -33,7 +33,15 @@ export default class ReactHeaderCell extends React.Component {
   }
 
   onClick = (e: any) => {
-    this.setState({ editing: true });
+    if (this.props.y == -1 && this.props.x == -1) {
+      return;
+    }
+
+    if (this.props.y == -1) {
+      Document.instance().getSpreadsheet().insertColumn(this.props.y);
+    } else if (this.props.x == -1) {
+      Document.instance().getSpreadsheet().insertRow(this.props.x);
+    } 
   };
 
   getCSS() {
