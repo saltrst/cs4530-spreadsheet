@@ -1,3 +1,4 @@
+import axios from 'axios';
 const FormulaParser = require('hot-formula-parser').Parser;
 const parser = new FormulaParser();
 
@@ -23,6 +24,7 @@ export abstract class Subject {
 
   attach(obs: IObserver): void {
     this.observers.push(obs);
+    console.log('called', this);
   }
 
   detach(obs: IObserver): void {
@@ -80,11 +82,11 @@ export class Spreadsheet extends Subject {
     return this.cells[x][y].getDisplay();
   }
 
-  findAndAttachToCell(c : Cell, x : number, y : number) : void {
+  findAndAttachToCell(c: Cell, x: number, y: number): void {
     this.cells[x][y].attach(c);
   }
 
-  sumCellVals(arr : number[][]) : string  {
+  sumCellVals(arr: number[][]): string {
     let value = 0;
     for (let a of arr) {
       value += parseInt(this.findCellVal(a[0], a[1]));
@@ -139,6 +141,7 @@ export class Spreadsheet extends Subject {
     this.height++;
     for (let x = 0; x < this.width; x++) {
       this.cells[x].splice(index, 0, new Cell());
+      console.log(this.cells[x]);
     }
     this.notify();
   }
@@ -164,89 +167,6 @@ export class Spreadsheet extends Subject {
   }
 }
 
-export class Parser {
-  public static parse(str: string): IExpression {
-    let pos = -1;
-    let ch = '';
-
-    let nextChar = () => {
-      ch = (++pos < str.length ? str.charAt(pos) : -1) + '';
-    };
-
-    let eat = (charToEat: string) => {
-      while (ch === ' ') nextChar();
-      if (ch === charToEat) {
-        nextChar();
-        return true;
-      }
-      return false;
-    };
-
-    let parse = () => {
-      nextChar();
-      let x = parseExpression();
-      if (pos < str.length) throw new Error('Unexpected: ' + ch);
-      return x;
-    };
-
-    let parseExpression: any = () => {
-      let x = parseTerm();
-      for (;;) {
-        if (eat('+')) x += parseTerm();
-        // addition
-        else if (eat('-')) x -= parseTerm();
-        // subtraction
-        else return x;
-      }
-    };
-
-    let parseTerm = () => {
-      let x = parseFactor();
-      for (;;) {
-        if (eat('*')) x *= parseFactor();
-        // multiplication
-        else if (eat('/')) x /= parseFactor();
-        // division
-        else return x;
-      }
-    };
-
-    let parseFactor: any = () => {
-      if (eat('+')) return parseFactor(); // unary plus
-      if (eat('-')) return -parseFactor(); // unary minus
-
-      let x;
-      let startPos = pos;
-      if (eat('(')) {
-        // parentheses
-        x = parseExpression();
-        eat(')');
-      } else if ((ch >= '0' && ch <= '9') || ch === '.') {
-        // numbers
-        while ((ch >= '0' && ch <= '9') || ch === '.') nextChar();
-        x = parseFloat(str.substring(startPos, pos));
-        //} else if (ch >= 'a' && ch <= 'z') { // functions
-        //    while (ch >= 'a' && ch <= 'z') nextChar();
-        //    String func = str.substring(startPos, this.pos);
-        //    x = parseFactor();
-        //    if (func.equals("sqrt")) x = Math.sqrt(x);
-        //    else if (func.equals("sin")) x = Math.sin(Math.toRadians(x));
-        //    else if (func.equals("cos")) x = Math.cos(Math.toRadians(x));
-        //    else if (func.equals("tan")) x = Math.tan(Math.toRadians(x));
-        //    else throw new RuntimeException("Unknown function: " + func);
-      } else {
-        throw new Error('Unexpected: ' + ch);
-      }
-
-      if (eat('^')) x = Math.pow(x, parseFactor()); // exponentiation
-
-      return x;
-    };
-
-    return parse();
-  }
-}
-
 export class Cell extends Subject implements IObserver {
   private expression: IExpression;
   private cacheValue: ICellValue;
@@ -265,11 +185,12 @@ export class Cell extends Subject implements IObserver {
   }
 
   setRawValue(val: string) {
-      this.rawValue = val;
+    this.rawValue = val;
   }
 
   subSomeValue(rawVal: string, term: string): string {
     let updatedRaw = rawVal;
+    console.log(updatedRaw);
     while (updatedRaw.includes(term + '(')) {
       let start = updatedRaw.indexOf(term + '(');
       let finish = updatedRaw.indexOf(')', start);
@@ -278,26 +199,64 @@ export class Cell extends Subject implements IObserver {
       if (term === 'SUM' || term === 'AVERAGE') {
         let cellRange = this.parseCellArray(found);
         let allCells = this.fillCellArray(cellRange);
-        for(let a of allCells) {
-          Document.getSpreadsheet().findAndAttachToCell(this,a[0], a[1]);
+        for (let a of allCells) {
+          Document.getSpreadsheet().findAndAttachToCell(this, a[0], a[1]);
         }
-        if(term === "SUM") {
+        if (term === 'SUM') {
           refCellVal = Document.getSpreadsheet().sumCellVals(allCells);
-        }
-        else {
+        } else {
           refCellVal = Document.getSpreadsheet().avgCellVals(allCells);
         }
-      } else {
+      } else if (term === 'REF') {
         let lett = found.split(/[0-9]/)[0];
         let num = found.substring(lett.length);
+
+        Document.getSpreadsheet().findAndAttachToCell(
+          this,
+          this.findRowIndex(lett),
+          parseInt(num)
+        );
         refCellVal = Document.getSpreadsheet().findCellVal(
           this.findRowIndex(lett),
           parseInt(num)
         );
       }
-      updatedRaw = rawVal.replace(term + "(" + found + ")", refCellVal);
+      updatedRaw = rawVal.replace(term + '(' + found + ')', refCellVal);
+      console.log(updatedRaw);
     }
     return updatedRaw;
+  }
+
+  async subStockTickerValue(rawVal: string, term: string): Promise<any> {
+    let updatedRaw = rawVal;
+    console.log(updatedRaw);
+    while (updatedRaw.includes(term + '(')) {
+      let start = updatedRaw.indexOf(term + '(');
+      let finish = updatedRaw.indexOf(')', start);
+      let found = updatedRaw.substring(start + term.length + 1, finish);
+      let refCellVal = '';
+      refCellVal = (await this.returnStockPrice(found)).toString();
+      console.log('2 late!');
+      updatedRaw = rawVal.replace(term + '(' + found + ')', refCellVal);
+      console.log(updatedRaw);
+    }
+    return updatedRaw;
+  }
+
+  async returnStockPrice(ticker: string): Promise<string> {
+    const url: string =
+      'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=' +
+      ticker +
+      '&apikey=4BUCZWKTB2069YPE';
+    try {
+      const response: any = await axios.get(url);
+      const lastData: any = Object.values(response.data['Time Series (Daily)']);
+      const amt = parseFloat(lastData[0]['4. close']).toString();
+      console.log(amt);
+      return amt;
+    } catch (exception) {
+      return 'ERROR: ';
+    }
   }
 
   findRowIndex(str: string): number {
@@ -351,18 +310,17 @@ export class Cell extends Subject implements IObserver {
     return arr;
   }
 
-  updateVal(rawValue: string): void {
+  async updateVal(rawValue: string) {
     this.rawValue = rawValue;
 
-    let noRefRaw = this.subSomeValue(rawValue, "REF"); 
-    noRefRaw = this.subSomeValue(noRefRaw, "AVERAGE"); 
-    noRefRaw = this.subSomeValue(noRefRaw, "SUM"); 
+    let noRefRaw: string = this.subSomeValue(rawValue, 'REF');
+    noRefRaw = this.subSomeValue(noRefRaw, 'AVERAGE');
+    noRefRaw = this.subSomeValue(noRefRaw, 'SUM');
+    noRefRaw = await this.subStockTickerValue(noRefRaw, '$');
 
     let parsed = parser.parse(noRefRaw).result;
     if (parsed) {
-      this.cacheValue = new CellString(
-        parsed.toString()
-      );
+      this.cacheValue = new CellString(parsed.toString());
     } else {
       this.cacheValue = new CellString(rawValue);
     }
@@ -402,33 +360,33 @@ export class Cell extends Subject implements IObserver {
   }
 
   adjustForColumn(amount: number) {
-    let functionRegex = /[A-Z]+\([A-Z]+\d+\)/gd
-    let matches = this.rawValue.match(functionRegex)
+    let functionRegex = `/[A-Z]+\([A-Z]+\d+\)/dg`;
+    let matches = this.rawValue.match(functionRegex);
     if (matches === null) return;
     for (let match of matches) {
-        let exec = /\([A-Z]/gd.exec(match);
-        if (exec === null) continue;
-        let colStr = exec[0].substr(1);
-        let colNum = BaseConvert.decode(colStr);
-        let newVal = BaseConvert.encode(colNum + amount);
-        let newStr = match.replace(colStr, newVal)
-        
-        this.rawValue = this.rawValue.replace(match, newStr);
+      let exec = `/\([A-Z]/dg.exec(match)`;
+      if (exec === null) continue;
+      let colStr = exec[0].substr(1);
+      let colNum = BaseConvert.decode(colStr);
+      let newVal = BaseConvert.encode(colNum + amount);
+      let newStr = match.replace(colStr, newVal);
+
+      this.rawValue = this.rawValue.replace(match, newStr);
     }
   }
 
   adjustForRow(amount: number) {
-    let functionRegex = /[A-Z]+\([A-Z]+\d+\)/gd
-    let matches = this.rawValue.match(functionRegex)
+    let functionRegex = `/[A-Z]+\([A-Z]+\d+\)/dg`;
+    let matches = this.rawValue.match(functionRegex);
     if (matches === null) return;
     for (let match of matches) {
-        let exec = /\d+\)/gd.exec(match);
-        if (exec === null) continue;
-        let colStr = exec[0].substr(0, exec[0].length - 1)
-        let newVal = (parseInt(colStr) + 1) + ''
-        let newStr = match.replace(colStr, newVal)
-        
-        this.rawValue = this.rawValue.replace(match, newStr);
+      let exec = `/\d+\)/dg.exec(match)`;
+      if (exec === null) continue;
+      let colStr = exec[0].substr(0, exec[0].length - 1);
+      let newVal = parseInt(colStr) + 1 + '';
+      let newStr = match.replace(colStr, newVal);
+
+      this.rawValue = this.rawValue.replace(match, newStr);
     }
   }
 }

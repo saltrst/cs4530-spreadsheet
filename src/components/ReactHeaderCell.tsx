@@ -41,7 +41,12 @@ export default class ReactHeaderCell extends React.Component {
       Document.instance().getSpreadsheet().insertColumn(this.props.y);
     } else if (this.props.x == -1) {
       Document.instance().getSpreadsheet().insertRow(this.props.x);
-    } 
+    }
+  };
+
+  onRightClick = (e: any) => {
+    console.log('right clicked !');
+    return false;
   };
 
   getCSS() {
@@ -55,6 +60,10 @@ export default class ReactHeaderCell extends React.Component {
     return (
       <span
         onClick={(e) => this.onClick(e)}
+        onContextMenu={(e) => {
+          this.onRightClick(e);
+          return false;
+        }}
         style={this.getCSS()}
         className={'headerCell'}
       >

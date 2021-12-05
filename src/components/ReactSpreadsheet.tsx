@@ -3,7 +3,9 @@ import ReactCell from './ReactCell';
 import ReactHeaderCell from './ReactHeaderCell';
 import { IObserver, Document, Cell, Spreadsheet } from '../backend';
 
-export default class ReactSpreadsheet extends React.Component implements IObserver {
+export default class ReactSpreadsheet
+  extends React.Component
+  implements IObserver {
   state: any;
   props: any;
   //cells: Cell[][];
@@ -24,7 +26,10 @@ export default class ReactSpreadsheet extends React.Component implements IObserv
 
   public static download(filename: string, data: string) {
     let element = document.createElement('a');
-    element.setAttribute('href', 'data:text/plain;charset=utf-8, ' + encodeURIComponent(data));
+    element.setAttribute(
+      'href',
+      'data:text/plain;charset=utf-8, ' + encodeURIComponent(data)
+    );
     element.setAttribute('download', filename);
     document.body.appendChild(element);
     element.click();
@@ -32,14 +37,17 @@ export default class ReactSpreadsheet extends React.Component implements IObserv
   }
 
   keyDown(e: any) {
-    if (e.code == "KeyS" && e.ctrlKey) {
-      e.preventDefault()
-      ReactSpreadsheet.download("document.csv", Document.getSpreadsheet().getCSV());
+    if (e.code == 'KeyS' && e.ctrlKey) {
+      e.preventDefault();
+      ReactSpreadsheet.download(
+        'document.csv',
+        Document.getSpreadsheet().getCSV()
+      );
     }
   }
 
   componentDidMount() {
-    let asdf:any = window
+    let asdf: any = window;
     asdf.asdf = Document.getSpreadsheet();
 
     document.addEventListener('keydown', this.keyDown, true);
