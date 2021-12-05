@@ -45,8 +45,17 @@ export default class ReactHeaderCell extends React.Component {
   };
 
   onRightClick = (e: any) => {
-    console.log('right clicked !');
-    return false;
+    e.preventDefault();
+
+    if (this.props.y == -1 && this.props.x == -1) {
+      return;
+    }
+
+    if (this.props.y == -1) {
+      Document.instance().getSpreadsheet().deleteColumn(this.props.x);
+    } else if (this.props.x == -1) {
+      Document.instance().getSpreadsheet().deleteRow(this.props.y);
+    }
   };
 
   getCSS() {

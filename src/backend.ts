@@ -24,7 +24,6 @@ export abstract class Subject {
 
   attach(obs: IObserver): void {
     this.observers.push(obs);
-  //  console.log('called', this);
   }
 
   detach(obs: IObserver): void {
@@ -152,13 +151,26 @@ export class Spreadsheet extends Subject {
     for (let x = 0; x < this.width; x++) {
       this.cells[x].splice(index, 0, new Cell("New Row @ index : " + index));
     }
+    for (let x = 0; x < this.width; x++) {
+      for (let y = 0; y < this.height; y++) {
+        this.cells[x][y].adjustForRow(1, index);
+      }
+    }
     console.log("after " , this.cells)
     this.notify();
     this.drawEverything();
   }
 
   deleteRow(index: number): void {
-    //Todo
+    this.height--;
+    for (let x = 0; x < this.width; x++) {
+      this.cells[x].splice(index, 1);
+    }
+    for (let x = 0; x < this.width; x++) {
+      for (let y = 0; y < this.height; y++) {
+        this.cells[x][y].adjustForRow(-1, index);
+      }
+    }
     this.notify();
   }
 
@@ -168,12 +180,27 @@ export class Spreadsheet extends Subject {
     for (let i = 0; i < this.height; i++) {
       array.push(new Cell());
     }
+    for (let x = 0; x < this.width; x++) {
+      for (let y = 0; y < this.height; y++) {
+        this.cells[x][y].adjustForColumn(1, index);
+      }
+    }
     this.cells.splice(index, 0, array);
     this.notify();
   }
 
   deleteColumn(index: number): void {
-    //Todo
+    this.width--;
+    //let array = [];
+    //for (let i = 0; i < this.height; i++) {
+    //  array.push(new Cell());
+    //}
+    for (let x = 0; x < this.width; x++) {
+      for (let y = 0; y < this.height; y++) {
+        this.cells[x][y].adjustForColumn(-1, index);
+      }
+    }
+    this.cells.splice(index, 1);
     this.notify();
   }
 }
@@ -202,7 +229,6 @@ export class Cell extends Subject implements IObserver {
 
   subSomeValue(rawVal: string, term: string): string {
     let updatedRaw = rawVal;
-    console.log(updatedRaw);
     while (updatedRaw.includes(term + '(')) {
       let start = updatedRaw.indexOf(term + '(');
       let finish = updatedRaw.indexOf(')', start);
@@ -234,23 +260,19 @@ export class Cell extends Subject implements IObserver {
         );
       }
       updatedRaw = rawVal.replace(term + '(' + found + ')', refCellVal);
-      console.log(updatedRaw);
     }
     return updatedRaw;
   }
 
   async subStockTickerValue(rawVal: string, term: string): Promise<any> {
     let updatedRaw = rawVal;
-    console.log(updatedRaw);
     while (updatedRaw.includes(term + '(')) {
       let start = updatedRaw.indexOf(term + '(');
       let finish = updatedRaw.indexOf(')', start);
       let found = updatedRaw.substring(start + term.length + 1, finish);
       let refCellVal = '';
       refCellVal = (await this.returnStockPrice(found)).toString();
-      console.log('2 late!');
       updatedRaw = rawVal.replace(term + '(' + found + ')', refCellVal);
-      console.log(updatedRaw);
     }
     return updatedRaw;
   }
@@ -264,7 +286,6 @@ export class Cell extends Subject implements IObserver {
       const response: any = await axios.get(url);
       const lastData: any = Object.values(response.data['Time Series (Daily)']);
       const amt = parseFloat(lastData[0]['4. close']).toString();
-      console.log(amt);
       return amt;
     } catch (exception) {
       return 'ERROR: ';
@@ -384,32 +405,38 @@ export class Cell extends Subject implements IObserver {
     return this.rawValue;
   }
 
-  adjustForColumn(amount: number) {
-    let functionRegex = `/[A-Z]+\([A-Z]+\d+\)/dg`;
+  adjustForColumn(amount: number, afterCol: number) {
+    let functionRegex = /[A-Z]+\([A-Z]+\d+\)/g;
     let matches = this.rawValue.match(functionRegex);
     if (matches === null) return;
     for (let match of matches) {
-      let exec = `/\([A-Z]/dg.exec(match)`;
+      let exec = /\([A-Z]/g.exec(match);
       if (exec === null) continue;
-      let colStr = exec[0].substr(1);
-      let colNum = BaseConvert.decode(colStr);
+      let oldVal = exec[0].substr(1);
+      let colNum = BaseConvert.decode(oldVal);
+      if (colNum < afterCol) {
+        return;
+      }
       let newVal = BaseConvert.encode(colNum + amount);
-      let newStr = match.replace(colStr, newVal);
+      let newStr = match.replace(oldVal, newVal);
 
       this.rawValue = this.rawValue.replace(match, newStr);
     }
   }
 
-  adjustForRow(amount: number) {
-    let functionRegex = `/[A-Z]+\([A-Z]+\d+\)/dg`;
+  adjustForRow(amount: number, afterRow: number) {
+    let functionRegex = /[A-Z]+\([A-Z]+\d+\)/g;
     let matches = this.rawValue.match(functionRegex);
     if (matches === null) return;
     for (let match of matches) {
-      let exec = `/\d+\)/dg.exec(match)`;
+      let exec = /\d+\)/g.exec(match);
       if (exec === null) continue;
-      let colStr = exec[0].substr(0, exec[0].length - 1);
-      let newVal = parseInt(colStr) + 1 + '';
-      let newStr = match.replace(colStr, newVal);
+      let oldVal = exec[0].substr(0, exec[0].length - 1);
+      if (parseInt(oldVal) < afterRow) {
+        return;
+      }
+      let newVal = parseInt(oldVal) + amount + '';
+      let newStr = match.replace(oldVal, newVal);
 
       this.rawValue = this.rawValue.replace(match, newStr);
     }
