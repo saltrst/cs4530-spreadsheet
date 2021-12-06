@@ -51,8 +51,7 @@ export default class ReactCell extends React.Component implements IObserver {
   };
 
   onClick = (e: any) => {
-    console.log(e);
-    if (e.ctrlKey) {
+    if (e.ctrlKey || e.shiftKey) {
       this.isHighlighted = !this.isHighlighted;
       this.forceUpdate();
     } else {
