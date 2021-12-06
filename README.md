@@ -89,19 +89,19 @@ A user can clear a cell simply by clicking on a cell containing a value. Upon cl
 
 **Adding a Row**
 
-A user can add a row to the spreadsheet by clicking on a cell in the left-hand-side numerical header column. Clicking on a row header will add a row immediately below the row that has been clicked. If a user clicks on the header of row '4', a new, empty row is added immediately below row '4' (in position '5'), and the spreadsheet height increases by 1.
+A user can add a row to the spreadsheet by clicking on a cell in the left-hand-side numerical header column. Clicking on a row header will add a row immediately below the row that has been clicked. If a user clicks on the header of row '4', a new, empty row is added immediately below row '4' (in position '5'), and the spreadsheet height increases by 1. When a new row is added, any cells with cell references or range expressions are accordingly updated to account for the change in cells. (ie. A Cell’s raw value is SUM(C3..C5). A user adds a row at index 0. The Cell’s raw value now reads SUM(C4..C6)).
 
 **Removing a Row**
 
-A user can remove a row from the spreadsheet by right-clicking on a cell in the left-hand-side numerical header column. Right-clicking on a row header will remove the row that the clicked cell is in. If a user right-clicks on the header of row '4', all cells in row '4' are removed from the spreadsheet, and the spreadsheet height decreases by 1.
+A user can remove a row from the spreadsheet by right-clicking on a cell in the left-hand-side numerical header column. Right-clicking on a row header will remove the row that the clicked cell is in. If a user right-clicks on the header of row '4', all cells in row '4' are removed from the spreadsheet, and the spreadsheet height decreases by 1. When a row is removed, any cells with cell references or range expressions are accordingly updated to account for the change in cells. (ie. A Cell’s raw value is SUM(C3..C5). A user removes a row at index 0. The Cell’s raw value now reads SUM(C2..C4)).
 
 **Adding a Column**
 
-A user can add a column to the spreadsheet by clicking on a cell in the alphabetical header row at the top of the spreadsheet. Clicking on a column header will add a column immediately to the right of the row that has been clicked. If a user clicks on the header of column '4', a new, empty column will be added immediately to the right of row '4' (in position '5'), and the spreadsheet width increases by 1.
+A user can add a column to the spreadsheet by clicking on a cell in the alphabetical header row at the top of the spreadsheet. Clicking on a column header will add a column immediately to the right of the row that has been clicked. If a user clicks on the header of column '4', a new, empty column will be added immediately to the right of row '4' (in position '5'), and the spreadsheet width increases by 1. When a column is added, any cells with cell references or range expressions are accordingly updated to account for the change in cells. (ie. A Cell’s raw value is SUM(C3..E3). A user adds a column at index 0. The Cell’s raw value now reads SUM(D3..F3)).
 
 **Removing a Column**
 
-A user can remove a column from the spreadsheet by right-clicking on a cell in the alphabetical header row at the top of the spreadsheet. Right-clicking on a column header will remove the column that the clicked cell is in. If a user right-clicks on the header of column '4', all cells in column '4' are removed from the spreadsheet, and the spreadsheet width decreases by 1.
+A user can remove a column from the spreadsheet by right-clicking on a cell in the alphabetical header row at the top of the spreadsheet. Right-clicking on a column header will remove the column that the clicked cell is in. If a user right-clicks on the header of column '4', all cells in column '4' are removed from the spreadsheet, and the spreadsheet width decreases by 1. When a column is removed, any cells with cell references or range expressions are accordingly updated to account for the change in cells. (ie. A Cell’s raw value is SUM(C3..E3). A user removes a column at index 0. The Cell’s raw value now reads SUM(B3..D3)).
 
 ### Additional Functionality
 
