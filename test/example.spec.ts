@@ -9,7 +9,6 @@ import { Cell } from '../src/backend';
  * to implement a test on the sorter. Implement your task 1 tests here, and feel
  * free to replace this one.
  */
-
  describe('Cell Basics', () => {
 
     it('build a cell', () => {
