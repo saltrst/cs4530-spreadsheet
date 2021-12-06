@@ -40,7 +40,6 @@ export abstract class Subject extends Unique {
   attach(obs: IObserver): void {
     if (this.isCyclical(obs)) {
       this.detach(obs);
-      console.log('cyclical reference!');
       throw new Error("Cyclical reference!");
     }
     this.observers.push(obs);
@@ -185,6 +184,7 @@ export class Spreadsheet extends Subject {
     for (let x = 0; x < this.width; x++) {
       this.cells[x].splice(index, 0, new Cell('New Row @ index : ' + index));
     }
+
     for (let x = 0; x < this.width; x++) {
       for (let y = 0; y < this.height; y++) {
         this.cells[x][y].adjustForRow(1, index);
@@ -199,6 +199,7 @@ export class Spreadsheet extends Subject {
     for (let x = 0; x < this.width; x++) {
       this.cells[x].splice(index, 1);
     }
+
     for (let x = 0; x < this.width; x++) {
       for (let y = 0; y < this.height; y++) {
         this.cells[x][y].adjustForRow(-1, index);
@@ -213,12 +214,13 @@ export class Spreadsheet extends Subject {
     for (let i = 0; i < this.height; i++) {
       array.push(new Cell());
     }
+    this.cells.splice(index, 0, array);
+
     for (let x = 0; x < this.width; x++) {
       for (let y = 0; y < this.height; y++) {
         this.cells[x][y].adjustForColumn(1, index);
       }
     }
-    this.cells.splice(index, 0, array);
     this.notify();
   }
 
@@ -304,14 +306,12 @@ export class Cell extends Subject implements IObserver {
   }
 
   async returnStockPrice(ticker: string): Promise<string> {
-    console.log('tucker: ', ticker);
     const url: string =
       'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=' +
       ticker +
       '&apikey=4BUCZWKTB2069YPE';
     try {
       const response: any = await axios.get(url);
-      console.log(response);
       const lastData: any = Object.values(response.data['Time Series (Daily)']);
       const amt = parseFloat(lastData[0]['4. close']).toString();
       return amt;
@@ -458,8 +458,6 @@ export class Cell extends Subject implements IObserver {
     let functionRegex = /[A-Z]+\([A-Z]+\d+\)/g;
     let matches = this.rawValue.match(functionRegex);
     if (matches === null) return;
-    console.log("matches");
-    console.log(matches);
     for (let match of matches) {
       let exec = /\d+\)/g.exec(match);
       if (exec === null) continue;
