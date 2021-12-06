@@ -94,7 +94,7 @@ export default class ReactSpreadsheet
               x={x}
               onChangedValue={this.handleChangedCell}
               updateCells={this.updateCells}
-              value={Document.getSpreadsheet().getCells()[x][y].getDisplay()}
+              value={Document.getSpreadsheet().getCells()[x][y].getValue()}
               cell={Document.getSpreadsheet().getCells()[x][y]}
             />
           );

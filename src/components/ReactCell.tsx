@@ -126,7 +126,7 @@ export default class ReactCell extends React.Component implements IObserver {
     } else {
       return (
         <span onClick={this.onClick} style={css} className={'cell'}>
-          {this.cell.getDisplay()}
+          {this.cell.getValue()}
         </span>
       );
     }

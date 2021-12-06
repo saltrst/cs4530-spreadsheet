@@ -436,13 +436,6 @@ describe('Spreadsheet', () => {
         })
     })
 
-    // not sure how to test this
-    //it('find and attach to cell', () => {
-    //    let sheet = new Spreadsheet(20, 10);
-    //    let cell = new Cell();
-    //    sheet.findAndAttachToCell(cell, 5, 5);
-    //})
-
     it('sum cells', async () => {
         let sheet = new Spreadsheet(10, 10);
 
@@ -482,8 +475,8 @@ describe('Spreadsheet', () => {
             }
         }
         sheet.insertRow(1)
-        expect(sheet.getCells()[0][0].getDisplay()).to.equal('1');
-        expect(sheet.getCells()[0][1].getDisplay()).to.equal('');
+        expect(sheet.getCells()[0][0].getValue()).to.equal('1');
+        expect(sheet.getCells()[0][1].getValue()).to.equal('');
     })
 
     it('delete row', async () => {
@@ -494,8 +487,8 @@ describe('Spreadsheet', () => {
             }
         }
         sheet.deleteRow(1)
-        expect(sheet.getCells()[0][0].getDisplay()).to.equal('1');
-        expect(sheet.getCells()[0][1].getDisplay()).to.equal('3');
+        expect(sheet.getCells()[0][0].getValue()).to.equal('1');
+        expect(sheet.getCells()[0][1].getValue()).to.equal('3');
     })
 
     it('insert column', async () => {
@@ -506,8 +499,8 @@ describe('Spreadsheet', () => {
             }
         }
         sheet.insertColumn(1)
-        expect(sheet.getCells()[0][0].getDisplay()).to.equal('1');
-        expect(sheet.getCells()[1][0].getDisplay()).to.equal('');
+        expect(sheet.getCells()[0][0].getValue()).to.equal('1');
+        expect(sheet.getCells()[1][0].getValue()).to.equal('');
     })
 
     it('delete column', async () => {
@@ -518,8 +511,8 @@ describe('Spreadsheet', () => {
             }
         }
         sheet.deleteColumn(1)
-        expect(sheet.getCells()[0][0].getDisplay()).to.equal('1');
-        expect(sheet.getCells()[1][0].getDisplay()).to.equal('3');
+        expect(sheet.getCells()[0][0].getValue()).to.equal('1');
+        expect(sheet.getCells()[1][0].getValue()).to.equal('3');
     })
 })
 
