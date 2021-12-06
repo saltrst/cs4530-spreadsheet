@@ -46,17 +46,7 @@ export default class ReactCell extends React.Component implements IObserver {
     }
   };
 
-  onChange = (e: any) => {
-    //this.setState({ value: e.target.value });
-    //this.display = e.target.value;
-    //{ x: this.props.x, y: this.props.y },
-    //e.target.value
-    // console.log(e.target.value);
-    //this.cell.updateVal(e.target.value);
-  };
-
   onBlur = (e: any) => {
-    //this.hasNewValue(e.target.value);
     this.cell.updateVal(e.target.value);
     this.setState({ editing: false });
   };
@@ -70,26 +60,9 @@ export default class ReactCell extends React.Component implements IObserver {
     }
   };
 
-  //hasNewValue = (value: any) => {
-  //  console.log("ReactCell at " + this.props.x + ":" + this.props.y);
-  //  console.log(this);
-  //  this.props.onChangedValue(
-  //    {
-  //      x: this.props.x,
-  //      y: this.props.y,
-  //    },
-  //    value
-  //  );
-  //  this.setState({ editing: false });
-  //};
-
   onFocus(e: any) {
     e.target.select();
   }
-
-  //setDisplay({ x, y }: any, value: any) {
-  //  return value;
-  //};
 
   dynamicCss = () => {
     let css: any = {
@@ -104,11 +77,6 @@ export default class ReactCell extends React.Component implements IObserver {
 
   render() {
     const css = this.dynamicCss();
-    if (this.props.x == 0) {
-      //console.log("react cell " + this.props.x + ":" + this.props.y);
-      //console.log(this);
-    }
-
     if (this.state.editing) {
       return (
         <input
@@ -117,7 +85,6 @@ export default class ReactCell extends React.Component implements IObserver {
           type='text'
           onBlur={this.onBlur}
           onKeyPress={this.onKeyPressOnInput}
-          onChange={this.onChange}
           onFocus={(e) => this.onFocus(e)}
           autoFocus
           defaultValue={this.cell.getRawValue()}
@@ -126,7 +93,7 @@ export default class ReactCell extends React.Component implements IObserver {
     } else {
       return (
         <span onClick={this.onClick} style={css} className={'cell'}>
-          {this.cell.getDisplay()}
+          {this.cell.getValue()}
         </span>
       );
     }

@@ -9,19 +9,16 @@ export default class ReactSpreadsheet
   implements IObserver {
   state: any;
   props: any;
-  //cells: Cell[][];
 
   constructor(props: any) {
     super(props);
     Document.getSpreadsheet().attach(this);
-    //this.cells = Document.getSpreadsheet().getCells();
     this.state = {
       data: {},
     };
   }
 
   update(): void {
-    //this.cells = Document.getSpreadsheet().getCells();
     this.forceUpdate();
   }
 
@@ -77,11 +74,6 @@ export default class ReactSpreadsheet
   render() {
     let data = [];
     ReactCell.detachAll();
-    //Document.getSpreadsheet().getCells().forEach((arr: Cell[]) => {
-    //  arr.forEach((c: Cell) => {
-    //    console.log(c.observers.length);
-    //  });
-    //});
     for (let y = -1; y < Document.getSpreadsheet().getCells()[0].length; y++) {
       for (let x = -1; x < Document.getSpreadsheet().getCells().length; x++) {
         if (x === -1 || y === -1) {
@@ -94,7 +86,7 @@ export default class ReactSpreadsheet
               x={x}
               onChangedValue={this.handleChangedCell}
               updateCells={this.updateCells}
-              value={Document.getSpreadsheet().getCells()[x][y].getDisplay()}
+              value={Document.getSpreadsheet().getCells()[x][y].getValue()}
               cell={Document.getSpreadsheet().getCells()[x][y]}
             />
           );
