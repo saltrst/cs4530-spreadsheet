@@ -107,6 +107,23 @@ export abstract class Subject extends Unique {
       return true;
     }
 
+    if (obs instanceof Cell) {
+      let cell: Cell = obs;
+      for (let o of cell.observers) {
+        if (o instanceof Cell) {
+          let c: Cell = o;
+          if (c.getId() == this.getId()) {
+            return true;
+          }
+          if (this instanceof Cell) {
+            if (this.isCyclical(c)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+
     return false;
   }
 }
@@ -473,6 +490,9 @@ export class Cell extends Subject implements IObserver {
     let value = this.parseFunctions(rawValue);
     value = await this.parseStocks(value);
     let parsed = parser.parse(value).result;
+    if (value == 'Error!') {
+      this.rawValue = value;
+    }
     if (parsed && typeof parsed === 'number') {
       this.cacheValue = parsed.toString();
     } else {
@@ -521,8 +541,12 @@ export class Cell extends Subject implements IObserver {
           let x = this.getX(coords);
           let y = this.getY(coords);
           let cell = Document.getCell(x, y);
-          cell.attach(this);
           newValue = cell.getValue();
+          try {
+            cell.attach(this);
+          } catch (Error) {
+            newValue = "Error!";
+          }
           break;
         case "AVG":
           var first = this.getCoords1(token);
@@ -532,6 +556,9 @@ export class Cell extends Subject implements IObserver {
           var x2 = this.getX(last);
           var y2 = this.getY(last);
           newValue = this.findAvg(x1, y1, x2, y2).toString();
+          if (this.attachRange(x1, y1, x2, y2)) {
+            newValue = "Error!";
+          }
           break;
         case "SUM":
           var first = this.getCoords1(token);
@@ -541,14 +568,42 @@ export class Cell extends Subject implements IObserver {
           var x2 = this.getX(last);
           var y2 = this.getY(last);
           newValue = this.findSum(x1, y1, x2, y2).toString();
+          if (this.attachRange(x1, y1, x2, y2)) {
+            newValue = "Error!";
+          }
           break;
       }
       str = str.replace(token, newValue);
     }
-
     return str;
   }
 
+  // returns true if there is an error
+  attachRange(x1: number, y1: number, x2: number, y2: number): boolean {
+    if (x1 > x2) {
+      let t = x2;
+      x2 = x1;
+      x1 = t;
+    }
+    if (y1 > y2) {
+      let t = y2;
+      y2 = y1;
+      y1 = t;
+    }
+    let sum = 0;
+    let count = 0;
+    for(let x = x1; x <= x2; x++) {
+      for(let y = y1; y <= y2; y++) {
+        let cell = Document.getCell(x, y);
+        try {
+          cell.attach(this);
+        } catch (Error) {
+          return true
+        }
+      }
+    }
+    return false
+  }
 
   /*
   This method avgs values within a range of cells
@@ -575,7 +630,7 @@ export class Cell extends Subject implements IObserver {
       for(let y = y1; y <= y2; y++) {
         let cell = Document.getCell(x, y);
         sum += parseFloat(cell.getValue());
-        cell.attach(this);
+        //cell.attach(this);
         count++;
       }
     }
@@ -606,7 +661,7 @@ export class Cell extends Subject implements IObserver {
       for(let y = y1; y <= y2; y++) {
         let cell = Document.getCell(x, y);
         sum += parseFloat(cell.getValue());
-        cell.attach(this);
+        //cell.attach(this);
       }
     }
     return sum;
@@ -782,17 +837,12 @@ export class Cell extends Subject implements IObserver {
     let changed = false;
     if (matches === null) return false;
     for (let token of matches) {
-      console.log('asdf')
-      console.log(token);
       let coords = token.match(/[A-Z]+\d+/g)
       if (coords === null) continue;
-      console.log(coords);
       for (let coord of coords) {
-        console.log(coord);
         let x = new Cell().getX(coord);
         let y = new Cell().getY(coord);
         if (y < afterRow) {
-          console.log('skipped');
           continue;
         }
         let newVal = BaseConvert.encode(x) + (y + amount);
