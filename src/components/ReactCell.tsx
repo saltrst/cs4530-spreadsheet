@@ -40,7 +40,6 @@ export default class ReactCell extends React.Component implements IObserver {
 
   onKeyPressOnInput = (e: any) => {
     if (e.key === 'Enter') {
-      //  this.hasNewValue(e.target.value);
       this.cell.updateVal(e.target.value);
       this.setState({ editing: false });
     }
@@ -52,6 +51,7 @@ export default class ReactCell extends React.Component implements IObserver {
   };
 
   onClick = (e: any) => {
+    console.log(e);
     if (e.ctrlKey) {
       this.isHighlighted = !this.isHighlighted;
       this.forceUpdate();
