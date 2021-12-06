@@ -70,10 +70,7 @@ export abstract class Subject extends Unique {
   attach(obs: IObserver): void {
     if (this.isCyclical(obs)) {
       this.detach(obs);
-      if(this instanceof Cell) {
-        this.updateVal("")
-      }
-      return;
+      throw new Error("Cyclical reference!");
     }
     this.observers.push(obs);
   }
@@ -578,7 +575,14 @@ export class Cell extends Subject implements IObserver {
     return str;
   }
 
-  // returns true if there is an error
+  /*
+  Attaches each cell in range as a subject. Returns true if there is an error
+  input: 
+  x1: x coord of cell 1
+  y1: y coord of cell 1
+  x2: x coord of cell 2
+  y2: x coord of cell 2
+  */
   attachRange(x1: number, y1: number, x2: number, y2: number): boolean {
     if (x1 > x2) {
       let t = x2;
@@ -630,7 +634,6 @@ export class Cell extends Subject implements IObserver {
       for(let y = y1; y <= y2; y++) {
         let cell = Document.getCell(x, y);
         sum += parseFloat(cell.getValue());
-        //cell.attach(this);
         count++;
       }
     }
@@ -661,7 +664,6 @@ export class Cell extends Subject implements IObserver {
       for(let y = y1; y <= y2; y++) {
         let cell = Document.getCell(x, y);
         sum += parseFloat(cell.getValue());
-        //cell.attach(this);
       }
     }
     return sum;
@@ -670,8 +672,8 @@ export class Cell extends Subject implements IObserver {
 
   /*
   This method uses regex to discover the symbol name when a stock ticker is discovered
-  input: 
-  token:The stock string
+  input: full function token
+  token: The stock string
   */
   getSymbol(token: string): string {
     let regex = /(?<=\()[A-Z]+(?=\))/
@@ -683,8 +685,8 @@ export class Cell extends Subject implements IObserver {
 
   /*
   This method gets the coordinates for first cell in range
-  input: 
-  token:The string containing the cell reference
+  input: full function token
+  token: The string containing the cell reference
   */
   getCoords1(token: string): string {
     let regex = /(?<=\()[A-Z]+\d+/;
@@ -695,8 +697,8 @@ export class Cell extends Subject implements IObserver {
 
   /*
   This method gets the coordinates for last cell in range
-  input: 
-  token:The string containing the cell reference
+  input: full function token
+  token: The string containing the cell reference
   */
   getCoords2(token: string): string {
     let regex = /[A-Z]+\d+(?=\))/;
@@ -707,7 +709,7 @@ export class Cell extends Subject implements IObserver {
 
   /*
   This method uses regex to discover the formula name when a formula is discovered
-  input: 
+  input: full function token
   token:The string containing the formula
   */
   getFunctionName(token: string): string {
@@ -719,8 +721,8 @@ export class Cell extends Subject implements IObserver {
 
   /*
   This method uses regex to discover the coords of a referencing formula
-  input: 
-  token:The string containing the formula
+  input: full function token
+  token: The string containing the formula
   */
   getCoords(token: string): string {
     let regex = /(?<=\()[A-Z]+\d+(?=\))/
@@ -731,8 +733,8 @@ export class Cell extends Subject implements IObserver {
 
   /*
   This method gets the x coordinate for first cell reference
-  input: 
-  coords:The string containing the cell reference
+  input: Cell coordinate string
+  coords: The string containing the cell reference
   */
   getX(coords: string): number {
     let regex = /[A-Z]+/
@@ -743,7 +745,7 @@ export class Cell extends Subject implements IObserver {
 
   /*
   This method gets the y coordinate for first cell reference
-  input: 
+  input: Cell coordinate string
   coords:The string containing the cell reference
   */
   getY(coords: string): number {
@@ -803,7 +805,6 @@ export class Cell extends Subject implements IObserver {
   afterCol: The index of the column change
   */
   adjustForColumn(amount: number, afterCol: number): boolean {
-    //let functionRegex = /[A-Z]+\([A-Z]+\d+\)/g;
     let regex = /[A-Z]+\([A-Z]+\d+(\.\.[A-Z]+\d+)?\)/g;
     let matches = this.rawValue.match(regex);
     let changed = false;
