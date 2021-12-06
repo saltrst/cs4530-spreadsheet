@@ -3,7 +3,6 @@ import "../src/backend";
 import { BaseConvert, Cell, Spreadsheet, Subject } from '../src/backend';
 import { IObserver } from '../src/backend';
 import { Document } from '../src/backend';
-import { Cell, Spreadsheet, Document } from '../src/backend';
 
 
 /**
@@ -204,8 +203,8 @@ import { Cell, Spreadsheet, Document } from '../src/backend';
         await cells[1][0].updateVal("1")
         await cells[0][1].updateVal("2")
         await cells[1][2].updateVal("6")
-        await cell.updateVal('AVERAGE(A0..B2)')
-        expect(cell.getRawValue()).to.equal('AVERAGE(A0..B2)');
+        await cell.updateVal('AVG(A0..B2)')
+        expect(cell.getRawValue()).to.equal('AVG(A0..B2)');
         expect(cell.getValue()).to.equal('3');
     })
 
@@ -235,11 +234,11 @@ import { Cell, Spreadsheet, Document } from '../src/backend';
         await cells[1][0].updateVal("1")
         await cells[0][1].updateVal("2")
         await cells[1][2].updateVal("6")
-        await cell.updateVal('AVERAGE(A0..B2)')
-        expect(cell.getRawValue()).to.equal('AVERAGE(A0..B2)');
+        await cell.updateVal('AVG(A0..B2)')
+        expect(cell.getRawValue()).to.equal('AVG(A0..B2)');
         expect(cell.getValue()).to.equal('3');
         await cells[1][0].updateVal("31")
-        expect(cell.getRawValue()).to.equal('AVERAGE(A0..B2)');
+        expect(cell.getRawValue()).to.equal('AVG(A0..B2)');
         expect(cell.getValue()).to.equal('8');
     })
     
@@ -539,6 +538,33 @@ describe('BaseConvert', () => {
             expect(BaseConvert.decode(BaseConvert.encode(num))).to.equal(num);
         }
     })
+})
+
+describe('New Parser', () => {
+    it('get function name', () => {
+        let cell = new Cell();
+        expect(cell.getFunctionName('REF(A1)')).to.equal('REF');
+    })
+
+    it('get coords', () => {
+        let cell = new Cell();
+        expect(cell.getCoords('REF(A1)')).to.equal('A1');
+    })
+
+    it('get x', () => {
+        let cell = new Cell();
+        expect(cell.getX('B4')).to.equal(1);
+    })
+
+    it('get y', () => {
+        let cell = new Cell();
+        expect(cell.getY('B4')).to.equal(4);
+    })
+
+    // test better
+    //it('find avg', () => {
+    //    new Cell().findAvg(0, 5, 0, 0);
+    //})
 })
 
 class TestSubject extends Subject implements IObserver {

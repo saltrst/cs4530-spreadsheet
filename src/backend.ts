@@ -87,6 +87,10 @@ export class Document {
     return Document.instance().getSpreadsheet();
   }
 
+  public static getCell(x: number, y: number): Cell {
+    return Document.instance().getSpreadsheet().getCells()[x][y];
+  }
+
   public static resetSpreadsheet(): void {
     this.singleton = new Document();
   }
@@ -182,12 +186,14 @@ export class Spreadsheet extends Subject {
   insertRow(index: number): void {
     this.height++;
     for (let x = 0; x < this.width; x++) {
-      this.cells[x].splice(index, 0, new Cell('New Row @ index : ' + index));
+      this.cells[x].splice(index, 0, new Cell());
     }
 
     for (let x = 0; x < this.width; x++) {
       for (let y = 0; y < this.height; y++) {
-        this.cells[x][y].adjustForRow(1, index);
+        if(this.cells[x][y].adjustForRow(1, index)) {
+          this.cells[x][y].update();
+        }
       }
     }
     this.notify();
@@ -202,12 +208,14 @@ export class Spreadsheet extends Subject {
 
     for (let x = 0; x < this.width; x++) {
       for (let y = 0; y < this.height; y++) {
-        this.cells[x][y].adjustForRow(-1, index);
+        if(this.cells[x][y].adjustForRow(-1, index)) {
+          this.cells[x][y].update();
+        }
       }
     }
     this.notify();
   }
-
+  
   insertColumn(index: number): void {
     this.width++;
     let array = [];
@@ -218,7 +226,9 @@ export class Spreadsheet extends Subject {
 
     for (let x = 0; x < this.width; x++) {
       for (let y = 0; y < this.height; y++) {
-        this.cells[x][y].adjustForColumn(1, index);
+        if(this.cells[x][y].adjustForColumn(1, index)) {
+          this.cells[x][y].update();
+        }
       }
     }
     this.notify();
@@ -228,7 +238,9 @@ export class Spreadsheet extends Subject {
     this.width--;
     for (let x = 0; x < this.width; x++) {
       for (let y = 0; y < this.height; y++) {
-        this.cells[x][y].adjustForColumn(-1, index);
+        if(this.cells[x][y].adjustForColumn(-1, index)) {
+          this.cells[x][y].update();
+        }
       }
     }
     this.cells.splice(index, 1);
@@ -379,24 +391,185 @@ export class Cell extends Subject implements IObserver {
   async updateVal(rawValue: string, ) {
     this.rawValue = rawValue;
 
-    let noRefRaw: string = this.subSomeValue(rawValue, 'REF');
-    noRefRaw = this.subSomeValue(noRefRaw, 'AVERAGE');
-    noRefRaw = this.subSomeValue(noRefRaw, 'SUM');
-    noRefRaw = await this.subStockTickerValue(noRefRaw, '$');
-
-    let parsed = parser.parse(noRefRaw).result;
-    let type = typeof parsed;
-    if (parsed && type === 'number') {
+    let value = this.parseFunctions(rawValue);
+    value = await this.parseStocks(value);
+    let parsed = parser.parse(value).result;
+    if (parsed && typeof parsed === 'number') {
       this.cacheValue = parsed.toString();
     } else {
-      this.cacheValue = this.concatIfCan(noRefRaw);
+      this.cacheValue = this.concatIfCan(value);
     }
+
+    //let noRefRaw: string = this.subSomeValue(rawValue, 'REF');
+    //noRefRaw = this.subSomeValue(noRefRaw, 'AVERAGE');
+    //noRefRaw = this.subSomeValue(noRefRaw, 'SUM');
+    //noRefRaw = await this.subStockTickerValue(noRefRaw, '$');
+
+    //let parsed = parser.parse(noRefRaw).result;
+    //let type = typeof parsed;
+    //if (parsed && type === 'number') {
+    //  this.cacheValue = parsed.toString();
+    //} else {
+    //  this.cacheValue = this.concatIfCan(noRefRaw);
+    //}
 
     this.notify();
   }
 
+  async parseStocks(str: string): Promise<string> {
+    let regex = /\$\([A-Z]+\)/g;
+    let matches = str.match(regex);
+
+    if (matches === null) return str;
+    for(let token of matches) {
+      let symbol = this.getSymbol(token);
+      let newValue = await this.returnStockPrice(symbol);
+      str = str.replace(token, newValue);
+    }
+    return str;
+  }
+
+  parseFunctions(str: string): string {
+    let regex = /[A-Z]+\([A-Z]+\d+(\.\.[A-Z]+\d+)?\)/g;
+    let matches = str.match(regex);
+
+    if (matches === null) return str;
+    for(let token of matches) {
+      let funcName = this.getFunctionName(token);
+      let newValue: string = token;
+      switch (funcName) {
+        case "REF":
+          let coords = this.getCoords(token);
+          let x = this.getX(coords);
+          let y = this.getY(coords);
+          let cell = Document.getCell(x, y);
+          cell.attach(this);
+          newValue = cell.getValue();
+          break;
+        case "AVG":
+          var first = this.getCoords1(token);
+          var last = this.getCoords2(token);
+          var x1 = this.getX(first);
+          var y1 = this.getY(first);
+          var x2 = this.getX(last);
+          var y2 = this.getY(last);
+          newValue = this.findAvg(x1, y1, x2, y2).toString();
+          break;
+        case "SUM":
+          var first = this.getCoords1(token);
+          var last = this.getCoords2(token);
+          var x1 = this.getX(first);
+          var y1 = this.getY(first);
+          var x2 = this.getX(last);
+          var y2 = this.getY(last);
+          newValue = this.findSum(x1, y1, x2, y2).toString();
+          break;
+      }
+      str = str.replace(token, newValue);
+    }
+
+    return str;
+  }
+
+  findAvg(x1: number, y1: number, x2: number, y2: number): number {
+    if (x1 > x2) {
+      let t = x2;
+      x2 = x1;
+      x1 = t;
+    }
+    if (y1 > y2) {
+      let t = y2;
+      y2 = y1;
+      y1 = t;
+    }
+    let sum = 0;
+    let count = 0;
+    for(let x = x1; x <= x2; x++) {
+      for(let y = y1; y <= y2; y++) {
+        let cell = Document.getCell(x, y);
+        sum += parseFloat(cell.getValue());
+        cell.attach(this);
+        count++;
+      }
+    }
+    return sum / count;
+  }
+
+  findSum(x1: number, y1: number, x2: number, y2: number): number {
+    if (x1 > x2) {
+      let t = x2;
+      x2 = x1;
+      x1 = t;
+    }
+    if (y1 > y2) {
+      let t = y2;
+      y2 = y1;
+      y1 = t;
+    }
+    let sum = 0;
+    for(let x = x1; x <= x2; x++) {
+      for(let y = y1; y <= y2; y++) {
+        let cell = Document.getCell(x, y);
+        sum += parseFloat(cell.getValue());
+        cell.attach(this);
+      }
+    }
+    return sum;
+  }
+
+  getSymbol(token: string): string {
+    let regex = /(?<=\()[A-Z]+(?=\))/
+    let result = regex.exec(token);
+    if (result === null) return '';
+    return result[0];
+  }
+
+  // gets the coordidinates for first cell in range
+  getCoords1(token: string): string {
+    let regex = /(?<=\()[A-Z]+\d+/;
+    let result = regex.exec(token);
+    if (result === null) return '';
+    return result[0];
+  }
+
+  // gets the coordidinates for last cell in range
+  getCoords2(token: string): string {
+    let regex = /[A-Z]+\d+(?=\))/;
+    let result = regex.exec(token);
+    if (result === null) return '';
+    return result[0];
+  }
+
+  getFunctionName(token: string): string {
+    let regex = /[A-Z]+/;
+    let result = regex.exec(token)
+    if (result === null) return '';
+    return result[0]
+  }
+
+  getCoords(token: string): string {
+    let regex = /(?<=\()[A-Z]+\d+(?=\))/
+    let result = regex.exec(token)
+    if (result === null) return '';
+    return result[0]
+  }
+
+  getX(coords: string): number {
+    let regex = /[A-Z]+/
+    let result = regex.exec(coords)
+    if (result === null) return 0;
+    return BaseConvert.decode(result[0]);
+  }
+
+  getY(coords: string): number {
+    let regex = /\d+/
+    let result = regex.exec(coords)
+    if (result === null) return 0;
+    return parseInt(result[0]);
+  }
+
   concatIfCan(str: string): string {
-    let strRef = str.split('+');
+    let strRef = str.replace(/\s/g, '').split('+');
     let cleanStrings = [];
 
     for (let bound of strRef) {
@@ -432,41 +605,54 @@ export class Cell extends Subject implements IObserver {
     return this.rawValue;
   }
 
-  adjustForColumn(amount: number, afterCol: number) {
-    let functionRegex = /[A-Z]+\([A-Z]+\d+\)/g;
-    let matches = this.rawValue.match(functionRegex);
-    if (matches === null) return;
-    for (let match of matches) {
-      let exec = /\([A-Z]/g.exec(match);
-      if (exec === null) continue;
-      let oldVal = exec[0].substr(1);
-      let colNum = BaseConvert.decode(oldVal);
-      if (colNum < afterCol) {
-        continue;
+  adjustForColumn(amount: number, afterCol: number): boolean {
+    //let functionRegex = /[A-Z]+\([A-Z]+\d+\)/g;
+    let regex = /[A-Z]+\([A-Z]+\d+(\.\.[A-Z]+\d+)?\)/g;
+    let matches = this.rawValue.match(regex);
+    let changed = false;
+    if (matches === null) return false;
+    for (let token of matches) {
+      let coords = token.match(/[A-Z]+\d+/g)
+      if (coords === null) continue;
+      for (let coord of coords) {
+        let x = new Cell().getX(coord);
+        let y = new Cell().getY(coord);
+        if (x < afterCol) {
+          continue;
+        }
+        let newVal = BaseConvert.encode(x + amount) + y;
+        this.rawValue = this.rawValue.replace(coord, newVal);
+        changed = true;
       }
-      let newVal = BaseConvert.encode(colNum + amount);
-      let newStr = match.replace(oldVal, newVal);
-
-      this.rawValue = this.rawValue.replace(match, newStr);
     }
+    return changed;
   }
 
-  adjustForRow(amount: number, afterRow: number) {
-    let functionRegex = /[A-Z]+\([A-Z]+\d+\)/g;
-    let matches = this.rawValue.match(functionRegex);
-    if (matches === null) return;
-    for (let match of matches) {
-      let exec = /\d+\)/g.exec(match);
-      if (exec === null) continue;
-      let oldVal = exec[0].substr(0, exec[0].length - 1);
-      if (parseInt(oldVal) < afterRow) {
-        continue;
+  adjustForRow(amount: number, afterRow: number): boolean {
+    let regex = /[A-Z]+\([A-Z]+\d+(\.\.[A-Z]+\d+)?\)/g;
+    let matches = this.rawValue.match(regex);
+    let changed = false;
+    if (matches === null) return false;
+    for (let token of matches) {
+      console.log('asdf')
+      console.log(token);
+      let coords = token.match(/[A-Z]+\d+/g)
+      if (coords === null) continue;
+      console.log(coords);
+      for (let coord of coords) {
+        console.log(coord);
+        let x = new Cell().getX(coord);
+        let y = new Cell().getY(coord);
+        if (y < afterRow) {
+          console.log('skipped');
+          continue;
+        }
+        let newVal = BaseConvert.encode(x) + (y + amount);
+        this.rawValue = this.rawValue.replace(coord, newVal);
+        changed = true;
       }
-      let newVal = parseInt(oldVal) + amount + '';
-      let newStr = match.replace(oldVal, newVal);
-
-      this.rawValue = this.rawValue.replace(match, newStr);
     }
+    return changed;
   }
 }
 
