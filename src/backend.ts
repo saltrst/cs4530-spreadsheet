@@ -69,13 +69,17 @@ export abstract class Subject extends Unique {
   */
   attach(obs: IObserver): void {
     if (this.isCyclical(obs)) {
-      this.detach(obs);
-      if(this instanceof Cell) {
-        this.updateVal("")
+      //this.detach(obs);
+      if(obs instanceof Cell) {
+        obs.updateVal("")
       }
       return;
     }
     this.observers.push(obs);
+    if((this instanceof Cell) && (obs instanceof Cell)) {
+      Document.getSpreadsheet().addToHead(this);
+      Document.getSpreadsheet().removeToHead(obs);
+    }
   }
 
   /*
@@ -107,8 +111,32 @@ export abstract class Subject extends Unique {
       return true;
     }
 
+    if((this instanceof Cell)) {
+      for(let h of Document.getSpreadsheet().getHeads()) {
+        let b = this.buildBranch(h);
+        if(b.indexOf(obs) > b.indexOf(this)) {
+          return true;
+        }
+      }
+    }
+
     return false;
   }
+
+
+  buildBranch(c : Cell) : Cell[] {
+    let ans : Cell[] = [];
+    if(!ans.includes(c)) {
+      ans.push(c);
+    }
+    for(let a of c.observers) {
+      if(a instanceof Cell) {
+        ans.concat(this.buildBranch(a));
+      }
+    }
+  
+    return ans;
+  } 
 }
 
 /*
@@ -182,11 +210,13 @@ export class Spreadsheet extends Subject {
   private width: number;
   private height: number;
   private cells: Cell[][];
+  private heads: Cell[];
 
   constructor(width: number, height: number) {
     super();
     this.width = width;
     this.height = height;
+    this.heads = [];
 
     this.cells = new Array(width);
     for (let x = 0; x < this.width; x++) {
@@ -195,6 +225,20 @@ export class Spreadsheet extends Subject {
         this.cells[x][y] = new Cell();
       }
     }
+  }
+
+  addToHead(c : Cell) :void {
+    this.heads.push(c);
+  }
+
+  removeToHead(c : Cell) :void {
+    while(this.heads.indexOf(c) > -1) {
+      this.heads.splice(this.heads.indexOf(c), 1);
+    }
+  }
+
+  getHeads() :Cell[] {
+    return this.heads;
   }
 
   /*
@@ -383,6 +427,7 @@ export class Cell extends Subject implements IObserver {
     this.cacheValue = '';
     this.rawValue = '';
   }
+
 
   /*
   This method prompts the cell to re-evaluate its rawValue and notify it's observers.
