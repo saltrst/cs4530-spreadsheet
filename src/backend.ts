@@ -40,9 +40,14 @@ export abstract class Subject extends Unique {
   attach(obs: IObserver): void {
     if (this.isCyclical(obs)) {
       this.detach(obs);
-      throw new Error("Cyclical reference!");
+      //throw new Error("Cyclical reference!");
     }
-    this.observers.push(obs);
+    else {
+      this.observers.push(obs);
+      if((obs instanceof Cell) && (this instanceof Cell)) {
+        obs.addLeader(this);
+      }
+    }
   }
 
   detach(obs: IObserver): void {
@@ -57,14 +62,54 @@ export abstract class Subject extends Unique {
     if (obs instanceof Cell) {
       cell = obs;
     } else {
+      console.log("is NOT Cyclic");
       return false;
     }
 
-    if (cell.getId() == this.getId()) {
+    if (cell.getId() === this.getId()) {
+      console.log("is Cyclic");
       return true;
     }
 
+    if(this instanceof Cell) {
+      let res = this.deepSearchForcInAc(cell, this);
+      console.log("is cyclic? " + res);
+      return res;
+    }
+
     return false;
+  }
+
+  deepSearchForcInAc(c : Cell, ac: Cell) : boolean {
+    let arr : String[] = [];
+    let currLeads : Cell[] = [];
+    let checkedLeads : Cell[] = [];
+
+    currLeads = ac.getLeaders();
+    
+    while(currLeads.length > 0) {
+      console.log("stuck in deepSearch : " + currLeads.length);
+      let val = currLeads[0];
+      if(!arr.includes(val.getId())) {
+        arr.push(val.getId());
+      }
+      currLeads = currLeads.slice(1);
+      console.log("cutting off 1 : " + currLeads.length);
+      checkedLeads.push(val);
+      for(let l of val.getLeaders()) {
+        if(!currLeads.includes(l) && !checkedLeads.includes(l)){
+          //currLeads.push(l);
+        }
+      }
+    }
+
+    console.log("obs leaders " + c.getLeaders())
+    console.log("subj leaders " + ac.getLeaders())
+    let res = arr.includes(c.getId());
+    console.log("is cyclic? " + res);
+    console.log("in cycle " + arr);
+    return res;
+
   }
 }
 
@@ -125,8 +170,12 @@ export class Spreadsheet extends Subject {
 
   findAndAttachToCell(c: Cell, x: number, y: number): void {
     this.cells[x][y].detach(c);
+    console.log("attempting attach2")
     try {
+      console.log("attempting attach3")
       this.cells[x][y].attach(c);
+      console.log("attaching leader");
+      c.addLeader(this.cells[x][y]);
     } catch (Error) {
       c.safeUpdateVal("Error!");
       this.cells[x][y].safeUpdateVal('Error!');
@@ -251,11 +300,21 @@ export class Spreadsheet extends Subject {
 export class Cell extends Subject implements IObserver {
   private cacheValue: string;
   private rawValue: string;
+  private leaders: Cell[];
 
   constructor(testVal?: string) {
     super();
     this.cacheValue = '';
     this.rawValue = testVal || '';
+    this.leaders = [];
+  }
+
+  addLeader(c : Cell): void {
+    this.leaders.push(c);
+  }
+
+  getLeaders() : Cell[] {
+    return this.leaders;
   }
 
   update(): void {
@@ -288,7 +347,7 @@ export class Cell extends Subject implements IObserver {
       } else if (term === 'REF') {
         let lett = found.split(/[0-9]/)[0];
         let num = found.substring(lett.length);
-
+        console.log("attempting attach1")
         Document.getSpreadsheet().findAndAttachToCell(
           this,
           this.findRowIndex(lett),
