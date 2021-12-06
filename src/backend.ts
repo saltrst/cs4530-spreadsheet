@@ -88,6 +88,10 @@ export class Document {
     return Document.instance().getSpreadsheet();
   }
 
+  public static resetSpreadsheet(): void {
+    this.singleton = new Document();
+  }
+
   getSpreadsheet(): Spreadsheet {
     return this.spreadsheet;
   }
@@ -160,11 +164,7 @@ export class Spreadsheet extends Subject {
       for (let x = 0; x < this.width; x++) {
         let value = '';
         let cellValue = this.cells[x][y].getValue();
-        if (cellValue.getKind() === CellKind.Number) {
-          value += cellValue.getNumber();
-        } else {
-          value += cellValue.getString();
-        }
+        value += cellValue;
         data += value + ',';
       }
       data += '\n';
@@ -235,12 +235,12 @@ export class Spreadsheet extends Subject {
 }
 
 export class Cell extends Subject implements IObserver {
-  private cacheValue: ICellValue;
+  private cacheValue: string;
   private rawValue: string;
 
   constructor(testVal?: string) {
     super();
-    this.cacheValue = new CellString('');
+    this.cacheValue = '';
     this.rawValue = testVal || '';
   }
 
@@ -373,7 +373,7 @@ export class Cell extends Subject implements IObserver {
 
   safeUpdateVal(rawValue: string) {
     this.rawValue = rawValue;
-    this.cacheValue = new CellString(rawValue);
+    this.cacheValue = rawValue;
   }
 
   async updateVal(rawValue: string, ) {
@@ -387,9 +387,9 @@ export class Cell extends Subject implements IObserver {
     let parsed = parser.parse(noRefRaw).result;
     let type = typeof parsed;
     if (parsed && type === 'number') {
-      this.cacheValue = new CellString(parsed.toString());
+      this.cacheValue = parsed.toString();
     } else {
-      this.cacheValue = new CellString(this.concatIfCan(noRefRaw));
+      this.cacheValue = this.concatIfCan(noRefRaw);
     }
 
     this.notify();
@@ -419,16 +419,13 @@ export class Cell extends Subject implements IObserver {
     this.notify();
   }
 
-  getValue(): ICellValue {
+  getValue(): string {
     return this.cacheValue;
   }
 
+  //TODO DELETE THIS
   getDisplay(): string {
-    if (this.cacheValue.getKind() === CellKind.Number) {
-      return this.cacheValue.getNumber() + '';
-    } else {
-      return this.cacheValue.getString();
-    }
+    return this.cacheValue;
   }
 
   getRawValue(): string {
@@ -472,219 +469,6 @@ export class Cell extends Subject implements IObserver {
 
       this.rawValue = this.rawValue.replace(match, newStr);
     }
-  }
-}
-
-export enum CellKind {
-  String,
-  Number,
-}
-
-export interface ICellValue {
-  getKind(): CellKind;
-  getNumber(): number;
-  getString(): string;
-}
-
-export class CellString implements ICellValue {
-  value: string;
-
-  constructor(value: string) {
-    this.value = value;
-  }
-
-  getKind(): CellKind {
-    return CellKind.String;
-  }
-
-  getNumber(): number {
-    return 0;
-  }
-
-  getString(): string {
-    return this.value;
-  }
-}
-
-export class CellNumber implements ICellValue {
-  value: number;
-
-  constructor(value: number) {
-    this.value = value;
-  }
-
-  getKind(): CellKind {
-    return CellKind.Number;
-  }
-
-  getNumber(): number {
-    return this.value;
-  }
-
-  getString(): string {
-    return '';
-  }
-}
-
-export enum Operation {
-  Add,
-  Mult,
-  Sub,
-  Div,
-}
-
-export interface IExpression {
-  eval(): ICellValue;
-}
-
-export class OperationExp implements IExpression {
-  left: IExpression;
-  right: IExpression;
-  op: Operation;
-
-  constructor(left: IExpression, right: IExpression, op: Operation) {
-    this.left = left;
-    this.right = right;
-    this.op = op;
-  }
-
-  eval(): ICellValue {
-    let value;
-    switch (this.op) {
-      case Operation.Add:
-        value = this.left.eval().getNumber() + this.right.eval().getNumber();
-        break;
-      case Operation.Sub:
-        value = this.left.eval().getNumber() - this.right.eval().getNumber();
-        break;
-      case Operation.Mult:
-        value = this.left.eval().getNumber() * this.right.eval().getNumber();
-        break;
-      case Operation.Div:
-        value = this.left.eval().getNumber() / this.right.eval().getNumber();
-        break;
-      default:
-        throw new Error('Unknown operator ' + this.op);
-    }
-    return new CellNumber(value);
-  }
-}
-
-export class CellReferenceExp implements IExpression {
-  cell: Cell;
-
-  constructor(cell: Cell) {
-    this.cell = cell;
-  }
-
-  eval(): ICellValue {
-    return this.cell.getValue();
-  }
-}
-
-export class NumberExp implements IExpression {
-  value: number;
-
-  constructor(value: number) {
-    this.value = value;
-  }
-
-  eval(): ICellValue {
-    return new CellNumber(this.value);
-  }
-}
-
-export enum RangeOperation {
-  Sum,
-  Avg,
-  Max,
-  Min,
-}
-
-export class RangeReferenceExp implements IExpression {
-  cells: Cell[];
-  op: RangeOperation;
-
-  constructor(cells: Cell[], op: RangeOperation) {
-    this.cells = cells;
-    this.op = op;
-
-    if (this.cells.length === 0) {
-      throw new Error('Empty range reference');
-    }
-  }
-
-  eval(): ICellValue {
-    switch (this.op) {
-      case RangeOperation.Avg:
-        return this.doAvg();
-      case RangeOperation.Sum:
-        return this.doSum();
-      case RangeOperation.Max:
-        return this.doMax();
-      case RangeOperation.Min:
-        return this.doMin();
-    }
-  }
-
-  doAvg(): ICellValue {
-    let value = 0;
-    for (let i = 0; i < this.cells.length; i++) {
-      value += this.cells[i].getValue().getNumber();
-    }
-    value = value / this.cells.length;
-    return new CellNumber(value);
-  }
-
-  doSum(): ICellValue {
-    let value = 0;
-    for (let i = 0; i < this.cells.length; i++) {
-      value += this.cells[i].getValue().getNumber();
-    }
-    return new CellNumber(value);
-  }
-
-  doMax(): ICellValue {
-    let value = this.cells[0].getValue().getNumber();
-    for (let i = 0; i < this.cells.length; i++) {
-      let next = this.cells[i].getValue().getNumber();
-      if (next > value) {
-        value = next;
-      }
-    }
-    return new CellNumber(value);
-  }
-
-  doMin(): ICellValue {
-    let value = this.cells[0].getValue().getNumber();
-    for (let i = 0; i < this.cells.length; i++) {
-      let next = this.cells[i].getValue().getNumber();
-      if (next < value) {
-        value = next;
-      }
-    }
-    return new CellNumber(value);
-  }
-}
-
-//export class APIExp implements IExpression {
-//    URL : string
-//    parameter : string
-//    eval(): ICellValue {
-//        //Todo
-//        throw new Error("Method not implemented.");
-//    }
-//}
-
-export class StringExp implements IExpression {
-  value: string;
-
-  constructor(value: string) {
-    this.value = value;
-  }
-
-  eval(): ICellValue {
-    return new CellString(this.value);
   }
 }
 
