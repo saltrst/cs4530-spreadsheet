@@ -53,6 +53,7 @@ export default class ReactCell extends React.Component implements IObserver {
 
   onClick = (e: any) => {
     if (e.ctrlKey) {
+      e.preventDefault();
       this.isHighlighted = !this.isHighlighted;
       this.forceUpdate();
     } else {
@@ -92,7 +93,15 @@ export default class ReactCell extends React.Component implements IObserver {
       );
     } else {
       return (
-        <span onClick={this.onClick} style={css} className={'cell'}>
+        <span
+          onClick={this.onClick}
+          onContextMenu={(e) => {
+            this.onClick(e);
+            return false;
+          }}
+          style={css}
+          className={'cell'}
+        >
           {this.cell.getValue()}
         </span>
       );
