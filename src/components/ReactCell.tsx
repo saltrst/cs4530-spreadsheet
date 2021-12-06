@@ -83,9 +83,9 @@ export default class ReactCell extends React.Component implements IObserver {
   //  this.setState({ editing: false });
   //};
 
-  //onFocus = (e: any) => {
-  //  this.setState({ editing: true });
-  //};
+  onFocus(e: any) {
+    e.target.select();
+  }
 
   //setDisplay({ x, y }: any, value: any) {
   //  return value;
@@ -96,7 +96,7 @@ export default class ReactCell extends React.Component implements IObserver {
       width: ReactCell.width + 'px',
     };
     if (this.isHighlighted) {
-      console.log('higlighted')
+      console.log('higlighted');
       css.backgroundColor = '#e7f78f';
     }
     return css;
@@ -118,7 +118,7 @@ export default class ReactCell extends React.Component implements IObserver {
           onBlur={this.onBlur}
           onKeyPress={this.onKeyPressOnInput}
           onChange={this.onChange}
-          //onFocus={this.onFocus}
+          onFocus={(e) => this.onFocus(e)}
           autoFocus
           defaultValue={this.cell.getRawValue()}
         />

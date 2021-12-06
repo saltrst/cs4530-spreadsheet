@@ -173,19 +173,17 @@ export class Spreadsheet extends Subject {
   }
 
   drawEverything() {
-    for(let cellArr of this.cells) {
-      for(let cell of cellArr) {
+    for (let cellArr of this.cells) {
+      for (let cell of cellArr) {
         cell.notify();
       }
     }
   }
 
   insertRow(index: number): void {
-    console.log("before " , this.cells)
-    //this.height++;
-    console.log("row inserted " + index);
+    this.height++;
     for (let x = 0; x < this.width; x++) {
-      this.cells[x].splice(index, 0, new Cell("New Row @ index : " + index));
+      this.cells[x].splice(index, 0, new Cell('New Row @ index : ' + index));
     }
     for (let x = 0; x < this.width; x++) {
       for (let y = 0; y < this.height; y++) {
@@ -226,10 +224,6 @@ export class Spreadsheet extends Subject {
 
   deleteColumn(index: number): void {
     this.width--;
-    //let array = [];
-    //for (let i = 0; i < this.height; i++) {
-    //  array.push(new Cell());
-    //}
     for (let x = 0; x < this.width; x++) {
       for (let y = 0; y < this.height; y++) {
         this.cells[x][y].adjustForColumn(-1, index);
@@ -244,7 +238,7 @@ export class Cell extends Subject implements IObserver {
   private cacheValue: ICellValue;
   private rawValue: string;
 
-  constructor(testVal? : string) {
+  constructor(testVal?: string) {
     super();
     this.cacheValue = new CellString('');
     this.rawValue = testVal || '';
@@ -310,12 +304,14 @@ export class Cell extends Subject implements IObserver {
   }
 
   async returnStockPrice(ticker: string): Promise<string> {
+    console.log('tucker: ', ticker);
     const url: string =
       'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=' +
       ticker +
       '&apikey=4BUCZWKTB2069YPE';
     try {
       const response: any = await axios.get(url);
+      console.log(response);
       const lastData: any = Object.values(response.data['Time Series (Daily)']);
       const amt = parseFloat(lastData[0]['4. close']).toString();
       return amt;
@@ -389,8 +385,8 @@ export class Cell extends Subject implements IObserver {
     noRefRaw = await this.subStockTickerValue(noRefRaw, '$');
 
     let parsed = parser.parse(noRefRaw).result;
-    let type = typeof(parsed);
-    if (parsed && type === "number") {
+    let type = typeof parsed;
+    if (parsed && type === 'number') {
       this.cacheValue = new CellString(parsed.toString());
     } else {
       this.cacheValue = new CellString(this.concatIfCan(noRefRaw));
@@ -399,27 +395,24 @@ export class Cell extends Subject implements IObserver {
     this.notify();
   }
 
-  concatIfCan(str : string) :string {
+  concatIfCan(str: string): string {
+    let strRef = str.split('+');
+    let cleanStrings = [];
 
-    let strRef = str.split("+");
-    let cleanStrings = []
-
-    for(let bound of strRef) {
-      if(!this.isBoundedByQuotes(bound)) {
+    for (let bound of strRef) {
+      if (!this.isBoundedByQuotes(bound)) {
         return str;
-      }
-      else {
+      } else {
         let clean = bound.split('"').join('');
         cleanStrings.push(clean);
       }
     }
-    return(cleanStrings.join(''))
+    return cleanStrings.join('');
   }
 
-  isBoundedByQuotes(str : string) {
-    return (str[0] === '"' && str[str.length-1] === '"')
+  isBoundedByQuotes(str: string) {
+    return str[0] === '"' && str[str.length - 1] === '"';
   }
-
 
   clear(): void {
     this.updateVal('');
@@ -452,7 +445,7 @@ export class Cell extends Subject implements IObserver {
       let oldVal = exec[0].substr(1);
       let colNum = BaseConvert.decode(oldVal);
       if (colNum < afterCol) {
-        return;
+        continue;
       }
       let newVal = BaseConvert.encode(colNum + amount);
       let newStr = match.replace(oldVal, newVal);
@@ -465,12 +458,14 @@ export class Cell extends Subject implements IObserver {
     let functionRegex = /[A-Z]+\([A-Z]+\d+\)/g;
     let matches = this.rawValue.match(functionRegex);
     if (matches === null) return;
+    console.log("matches");
+    console.log(matches);
     for (let match of matches) {
       let exec = /\d+\)/g.exec(match);
       if (exec === null) continue;
       let oldVal = exec[0].substr(0, exec[0].length - 1);
       if (parseInt(oldVal) < afterRow) {
-        return;
+        continue;
       }
       let newVal = parseInt(oldVal) + amount + '';
       let newStr = match.replace(oldVal, newVal);
