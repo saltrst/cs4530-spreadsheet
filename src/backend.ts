@@ -1,18 +1,33 @@
 import axios from 'axios';
+import { v4 as uuidv4 } from 'uuid';
+
 const FormulaParser = require('hot-formula-parser').Parser;
 const parser = new FormulaParser();
 
 const DEFAULT_WIDTH = 10;
 const DEFAULT_HEIGHT = 20;
 
+export abstract class Unique {
+  private id: string;
+
+  constructor() {
+    this.id = uuidv4();
+  }
+
+  getId(): string {
+    return this.id
+  }
+}
+
 export interface IObserver {
   update(): void;
 }
 
-export abstract class Subject {
+export abstract class Subject extends Unique {
   observers: IObserver[];
 
   constructor() {
+    super();
     this.observers = new Array();
   }
 
@@ -23,6 +38,11 @@ export abstract class Subject {
   }
 
   attach(obs: IObserver): void {
+    if (this.isCyclical(obs)) {
+      this.detach(obs);
+      console.log('cyclical reference!');
+      throw new Error("Cyclical reference!");
+    }
     this.observers.push(obs);
   }
 
@@ -31,6 +51,21 @@ export abstract class Subject {
     if (index > -1) {
       this.observers.splice(index, 1);
     }
+  }
+
+  isCyclical(obs: IObserver): boolean {
+    let cell: Cell;
+    if (obs instanceof Cell) {
+      cell = obs;
+    } else {
+      return false;
+    }
+
+    if (cell.getId() == this.getId()) {
+      return true;
+    }
+
+    return false;
   }
 }
 
@@ -82,7 +117,13 @@ export class Spreadsheet extends Subject {
   }
 
   findAndAttachToCell(c: Cell, x: number, y: number): void {
-    this.cells[x][y].attach(c);
+    this.cells[x][y].detach(c);
+    try {
+      this.cells[x][y].attach(c);
+    } catch (Error) {
+      c.safeUpdateVal("Error!");
+      this.cells[x][y].safeUpdateVal('Error!');
+    }
   }
 
   sumCellVals(arr: number[][]): string {
@@ -111,11 +152,6 @@ export class Spreadsheet extends Subject {
 
   getHeight(): number {
     return this.height;
-  }
-
-  updateCell(x: number, y: number, input: string): void {
-    //let exp = Parser.parse(input);
-    this.cells[x][y].updateVal(input);
   }
 
   getCSV(): string {
@@ -156,7 +192,6 @@ export class Spreadsheet extends Subject {
         this.cells[x][y].adjustForRow(1, index);
       }
     }
-    console.log("after " , this.cells)
     this.notify();
     this.drawEverything();
   }
@@ -206,14 +241,11 @@ export class Spreadsheet extends Subject {
 }
 
 export class Cell extends Subject implements IObserver {
-  private expression: IExpression;
   private cacheValue: ICellValue;
   private rawValue: string;
-  //private testVal: string;
 
   constructor(testVal? : string) {
     super();
-    this.expression = new StringExp('');
     this.cacheValue = new CellString('');
     this.rawValue = testVal || '';
   }
@@ -343,7 +375,12 @@ export class Cell extends Subject implements IObserver {
     return arr;
   }
 
-  async updateVal(rawValue: string) {
+  safeUpdateVal(rawValue: string) {
+    this.rawValue = rawValue;
+    this.cacheValue = new CellString(rawValue);
+  }
+
+  async updateVal(rawValue: string, ) {
     this.rawValue = rawValue;
 
     let noRefRaw: string = this.subSomeValue(rawValue, 'REF');
