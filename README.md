@@ -121,7 +121,7 @@ In order to allow the user to save the work they create in this spreadsheet, a u
 
 **Highlighting/Un-highlighting a Cell**
 
-In order to supply a user with additional functionality regarding the display of the information within the spreadsheet, a user may highlight and un-highlight given cells. A user can highlight a cell by right-clicking on a non-highlighted cell. A user can un-highlight a cell by right-clicking on a highlighted cell.
+In order to supply a user with additional functionality regarding the display of the information within the spreadsheet, a user may highlight and un-highlight given cells. A user can highlight a cell by holding the 'control' or 'shift' key and clicking on a non-highlighted cell. A user can un-highlight a cell by holding the 'control' or 'shift' key and clicking on on a highlighted cell.
 
 ### Tech Stack
 
