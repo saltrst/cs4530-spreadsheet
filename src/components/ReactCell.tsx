@@ -69,7 +69,6 @@ export default class ReactCell extends React.Component implements IObserver {
       width: ReactCell.width + 'px',
     };
     if (this.isHighlighted) {
-      console.log('higlighted');
       css.backgroundColor = '#e7f78f';
     }
     return css;
