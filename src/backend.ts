@@ -567,7 +567,6 @@ export class Cell extends Subject implements IObserver {
           var y1 = this.getY(first);
           var x2 = this.getX(last);
           var y2 = this.getY(last);
-          console.log("asdf");
           newValue = this.findAvg(x1, y1, x2, y2).toString();
           if (this.attachRange(x1, y1, x2, y2)) {
             newValue = "Error!";
