@@ -11,7 +11,7 @@ export default class ReactCell extends React.Component implements IObserver {
   cell: Cell;
   isHighlighted: boolean;
 
-  public static width: number = 75;
+  public static width: number = 150;
 
   private static allReactCells: ReactCell[] = new Array();
 
