@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactCell from './ReactCell';
-import { Document, BaseConvert, Cell } from '../backend';
+import { Document } from '../backend/Document';
+import { BaseConvert } from '../backend/BaseConvert';
+import { Cell } from '../backend/Cell';
 
 /**
  * Cell represents the atomic element of a table

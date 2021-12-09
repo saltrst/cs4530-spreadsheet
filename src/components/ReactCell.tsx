@@ -1,6 +1,6 @@
 import React from 'react';
-import { Cell } from '../backend';
-import { IObserver } from '../backend';
+import { Cell } from '../backend/Cell';
+import { IObserver } from '../backend/IObserver';
 
 /**
  * Cell represents the atomic element of a table
@@ -11,7 +11,7 @@ export default class ReactCell extends React.Component implements IObserver {
   cell: Cell;
   isHighlighted: boolean;
 
-  public static width: number = 75;
+  public static width: number = 150;
 
   private static allReactCells: ReactCell[] = new Array();
 
@@ -40,7 +40,6 @@ export default class ReactCell extends React.Component implements IObserver {
 
   onKeyPressOnInput = (e: any) => {
     if (e.key === 'Enter') {
-      //  this.hasNewValue(e.target.value);
       this.cell.updateVal(e.target.value);
       this.setState({ editing: false });
     }
@@ -52,7 +51,7 @@ export default class ReactCell extends React.Component implements IObserver {
   };
 
   onClick = (e: any) => {
-    if (e.ctrlKey) {
+    if (e.ctrlKey || e.shiftKey) {
       e.preventDefault();
       this.isHighlighted = !this.isHighlighted;
       this.forceUpdate();
@@ -70,7 +69,6 @@ export default class ReactCell extends React.Component implements IObserver {
       width: ReactCell.width + 'px',
     };
     if (this.isHighlighted) {
-      console.log('higlighted');
       css.backgroundColor = '#e7f78f';
     }
     return css;
@@ -95,12 +93,12 @@ export default class ReactCell extends React.Component implements IObserver {
       return (
         <span
           onClick={this.onClick}
+          style={css}
+          className={'cell'}
           onContextMenu={(e) => {
             this.onClick(e);
             return false;
           }}
-          style={css}
-          className={'cell'}
         >
           {this.cell.getValue()}
         </span>

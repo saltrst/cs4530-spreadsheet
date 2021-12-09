@@ -1,7 +1,8 @@
 import React from 'react';
 import ReactCell from './ReactCell';
 import ReactHeaderCell from './ReactHeaderCell';
-import { IObserver, Document, Cell, Spreadsheet } from '../backend';
+import { Document } from '../backend/Document';
+import { IObserver } from '../backend/IObserver';
 import { v4 as uuidv4 } from 'uuid';
 
 export default class ReactSpreadsheet
