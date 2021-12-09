@@ -47,10 +47,12 @@ observers: All of the observers which view this subject and must be notified on 
 */
 export abstract class Subject extends Unique {
   observers: IObserver[];
+  subjects: Subject[];
 
   constructor() {
     super();
     this.observers = new Array();
+    this.subjects = new Array();
   }
 
   /*
@@ -73,6 +75,9 @@ export abstract class Subject extends Unique {
       throw new Error("Cyclical reference!");
     }
     this.observers.push(obs);
+    if (obs instanceof Subject) {
+      obs.subjects.push(this);
+    }
   }
 
   /*
@@ -85,6 +90,15 @@ export abstract class Subject extends Unique {
     if (index > -1) {
       this.observers.splice(index, 1);
     }
+  }
+
+  clear() {
+    if (this instanceof Cell) {
+      for (let subject of this.subjects) {
+        subject.detach(this);
+      }
+    }
+    this.subjects = new Array();
   }
 
   /*
@@ -402,6 +416,7 @@ export class Cell extends Subject implements IObserver {
   This method prompts the cell to re-evaluate its rawValue and notify it's observers.
   */
   update(): void {
+    this.clear();
     this.updateVal(this.rawValue);
     this.notify();
   }
